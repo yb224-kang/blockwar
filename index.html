@@ -77,6 +77,16 @@
             touch-action: none;
             user-select: none;
         }
+
+        /* 안착 시 탄성 바운스 임팩트 애니메이션 */
+        @keyframes block-drop {
+            0% { transform: scale(1.35); filter: brightness(1.6); }
+            70% { transform: scale(0.92); }
+            100% { transform: scale(1); filter: brightness(1); }
+        }
+        .animate-drop {
+            animation: block-drop 0.22s cubic-bezier(0.175, 0.885, 0.32, 1.25) forwards;
+        }
     </style>
     <script id="tailwind-config">
         tailwind.config = {
@@ -217,7 +227,7 @@
 
         <!-- MAIN BOARD AREA: 너비를 300px로 최적화하여 뷰포트 맞춤 -->
         <section class="relative w-full max-w-[300px] flex items-center justify-center mx-auto my-1 flex-shrink-0">
-            <div id="game-board-container" class="relative w-full aspect-square glass-panel rounded-xl p-unit shadow-2xl overflow-hidden select-none">
+            <div id="game-board-container" class="relative w-full aspect-square glass-panel rounded-xl p-unit shadow-[inset_0_4px_15px_rgba(0,0,0,0.85),0_15px_30px_rgba(0,0,0,0.7)] border border-white/10 overflow-hidden select-none">
                 <!-- Grid Lines -->
                 <div class="absolute inset-0 grid-line opacity-10"></div>
                 <!-- 10x10 Grid Cells -->
@@ -279,8 +289,8 @@
         </button>
     </nav>
 
-    <!-- Floating Drag Helper (따라다니는 블록 미리보기) -->
-    <div id="drag-helper" class="fixed pointer-events-none z-[100] hidden opacity-90 transition-transform duration-75"></div>
+    <!-- Floating Drag Helper (따라다니는 블록 미리보기) - 지연시간 제거로 드래그 스피드 초고속화 -->
+    <div id="drag-helper" class="fixed pointer-events-none z-[100] hidden opacity-95"></div>
 
     <!-- Settings Modal -->
     <div id="modal-settings" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] hidden flex items-center justify-center p-md">
@@ -471,13 +481,13 @@
                     cellEl.className = 'w-full h-full rounded-sm transition-all duration-200 relative ';
                     
                     if (cell.type === 'empty') {
-                        cellEl.classList.add('bg-white/[0.02]', 'border', 'border-white/[0.02]');
+                        cellEl.className += 'bg-black/35 shadow-[inset_0_2px_4px_rgba(0,0,0,0.6)] border border-white/[0.02]';
                     } else if (cell.type === 'block') {
-                        // Tailwind 컬러 클래스 매핑
+                        // Tailwind 컬러 클래스 매핑 (3D 입체 및 두께감 부여)
                         const colorMap = {
-                            primary: 'bg-primary shadow-[0_0_8px_rgba(173,198,255,0.3)]',
-                            secondary: 'bg-secondary shadow-[0_0_8px_rgba(255,176,205,0.3)]',
-                            tertiary: 'bg-tertiary shadow-[0_0_8px_rgba(78,222,163,0.3)]'
+                            primary: 'bg-primary border-b-[3px] border-r-[3px] border-black/40 shadow-[0_0_12px_rgba(173,198,255,0.5),inset_0_2px_3px_rgba(255,255,255,0.4)]',
+                            secondary: 'bg-secondary border-b-[3px] border-r-[3px] border-black/40 shadow-[0_0_12px_rgba(255,176,205,0.5),inset_0_2px_3px_rgba(255,255,255,0.4)]',
+                            tertiary: 'bg-tertiary border-b-[3px] border-r-[3px] border-black/40 shadow-[0_0_12px_rgba(78,222,163,0.5),inset_0_2px_3px_rgba(255,255,255,0.4)]'
                         };
                         cellEl.className += colorMap[cell.color] || 'bg-outline';
                         
@@ -486,7 +496,7 @@
                             cellEl.classList.add(cell.patternClass);
                         }
                     } else if (cell.type === 'stone') {
-                        cellEl.classList.add('stone-texture', 'border', 'border-outline-variant/60');
+                        cellEl.classList.add('stone-texture', 'border', 'border-outline-variant/60', 'border-b-[3px]', 'border-r-[3px]', 'border-black/50', 'shadow-[inset_0_1px_2px_rgba(255,255,255,0.1)]');
                         
                         // 돌 위에 깨진 균열을 표시하기 위해 내구도 대비 아이콘 표시
                         const hpRatio = cell.health / cell.maxHealth;
@@ -697,7 +707,8 @@
             const cols = maxC - minC + 1;
             
             const helperGrid = document.createElement('div');
-            helperGrid.className = 'grid gap-[3px] p-2 bg-white/5 rounded-lg border border-white/10 backdrop-blur-md shadow-2xl';
+            // 드래그 시작 시 3D 상승 피드백 (scale-110, 큰 shadow)
+            helperGrid.className = 'grid gap-[3px] p-2 bg-white/10 rounded-xl border border-white/20 backdrop-blur-md shadow-[0_20px_45px_rgba(0,0,0,0.85)] scale-110';
             helperGrid.style.gridTemplateRows = `repeat(${rows}, minmax(0, 1fr))`;
             helperGrid.style.gridTemplateColumns = `repeat(${cols}, minmax(0, 1fr))`;
             
@@ -706,13 +717,14 @@
             for (let r = 0; r < rows; r++) {
                 for (let c = 0; c < cols; c++) {
                     const cellEl = document.createElement('div');
-                    cellEl.className = 'w-8 h-8 rounded-sm';
+                    // 대기 상태(작은 크기)보다 커진 판데기 매칭용 w-[28px] h-[28px] 적용
+                    cellEl.className = 'w-[28px] h-[28px] rounded-md';
                     
                     if (cellSet.has(`${r},${c}`)) {
                         const colorMap = {
-                            primary: 'bg-primary shadow-lg',
-                            secondary: 'bg-secondary shadow-lg',
-                            tertiary: 'bg-tertiary shadow-lg'
+                            primary: 'bg-primary border-b-[3px] border-r-[3px] border-black/40 shadow-[0_0_12px_rgba(173,198,255,0.5),inset_0_2px_3px_rgba(255,255,255,0.4)]',
+                            secondary: 'bg-secondary border-b-[3px] border-r-[3px] border-black/40 shadow-[0_0_12px_rgba(255,176,205,0.5),inset_0_2px_3px_rgba(255,255,255,0.4)]',
+                            tertiary: 'bg-tertiary border-b-[3px] border-r-[3px] border-black/40 shadow-[0_0_12px_rgba(78,222,163,0.5),inset_0_2px_3px_rgba(255,255,255,0.4)]'
                         };
                         cellEl.className += ' ' + colorMap[block.color];
                         if (settings.colorblind && block.patternClass) {
@@ -798,12 +810,31 @@
                 // 렌더 갱신
                 renderBoard();
                 renderSlots();
+
+                // 안착 바운스 애니메이션 실행
+                triggerDropAction(targetCell.row, targetCell.col, block);
                 
                 // 게임 오버 여부 판단
                 checkGameOver();
             }
             
             activeDragIndex = null;
+        }
+
+        // 블록 배치 성공 시 쿵 하고 박히며 튕기는 탄성 애니메이션 적용
+        function triggerDropAction(startRow, startCol, block) {
+            const baseR = block.cells[0][0];
+            const baseC = block.cells[0][1];
+            
+            block.cells.forEach(([r, c]) => {
+                const targetR = startRow + (r - baseR);
+                const targetC = startCol + (c - baseC);
+                
+                const cellEl = boardGridEl.querySelector(`[data-row="${targetR}"][data-col="${targetC}"]`);
+                if (cellEl) {
+                    cellEl.classList.add('animate-drop');
+                }
+            });
         }
 
         // --- 6. GAME LOGIC ALGORITHMS ---
@@ -888,7 +919,7 @@
                 const cell = board[r][c];
                 
                 if (cell.type === 'empty') {
-                    cellEl.className = 'w-full h-full rounded-sm transition-all duration-200 relative bg-white/[0.02] border border-white/[0.02]';
+                    cellEl.className = 'w-full h-full rounded-sm transition-all duration-200 relative bg-black/35 shadow-[inset_0_2px_4px_rgba(0,0,0,0.6)] border border-white/[0.02]';
                 }
             });
         }
