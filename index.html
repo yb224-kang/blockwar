@@ -1502,7 +1502,7 @@
             
             // 빠를 때는 자석 스냅을 무시하여 드래그 헬퍼 깜빡임 및 버벅임 완전 방지
             const block = slots[activeDragIndex];
-            const targetCell = isFast ? null : getClosestValidCell(clientX, clientY + dragOffset.y, block);
+            const targetCell = isFast ? null : getClosestCell(clientX, clientY + dragOffset.y);
             
             const targetKey = targetCell ? `${targetCell.row},${targetCell.col}` : "";
             if (targetKey === lastTargetCellKey) {
@@ -1514,9 +1514,16 @@
             clearPreviewHighlights();
             
             if (targetCell) {
-                drawPreviewHighlight(targetCell.row, targetCell.col, block);
-                // 안착 가능 자석 스냅 맺히면 손가락 밑 드래그 헬퍼는 숨겨 겹침 방지
-                dragHelperEl.classList.add('opacity-0');
+                const isValid = isValidPlacement(targetCell.row, targetCell.col, block);
+                if (isValid) {
+                    drawPreviewHighlight(targetCell.row, targetCell.col, block);
+                    // 안착 가능 자석 스냅 맺히면 손가락 밑 드래그 헬퍼는 숨겨 겹침 방지
+                    dragHelperEl.classList.add('opacity-0');
+                } else {
+                    // 이미 채워진 칸 위를 지나더라도 스냅을 그대로 걸어주고 붉은 경고를 표시
+                    drawInvalidPreviewHighlight(targetCell.row, targetCell.col, block);
+                    dragHelperEl.classList.remove('opacity-0'); // 손가락 밑 헬퍼는 계속 보여줌
+                }
             } else {
                 // 스냅 범위 밖에서는 헬퍼 투명화 원복
                 dragHelperEl.classList.remove('opacity-0');
@@ -1530,11 +1537,11 @@
             const clientY = e.changedTouches ? e.changedTouches[0].clientY : e.clientY;
             
             const block = slots[activeDragIndex];
-            const targetCell = getClosestValidCell(clientX, clientY + dragOffset.y, block);
+            const targetCell = getClosestCell(clientX, clientY + dragOffset.y);
             
             let placed = false;
             
-            if (targetCell) {
+            if (targetCell && isValidPlacement(targetCell.row, targetCell.col, block)) {
                 placeBlock(targetCell.row, targetCell.col, block);
                 placed = true;
             }
@@ -1619,6 +1626,48 @@
                 }
             }
             return null;
+        }
+
+        // 유효 여부에 무관하게 가장 가까운 물리적 격자 탐색 (드래그 스킵 방지)
+        function getClosestCell(x, y) {
+            if (cellCenters.length === 0) return null;
+            
+            const list = cellCenters.map(cell => {
+                const dx = cell.x - x;
+                const dy = cell.y - y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                return { cell, dist };
+            });
+            
+            list.sort((a, b) => a.dist - b.dist);
+            
+            const maxSnapDistance = 120;
+            if (list[0].dist <= maxSnapDistance) {
+                return {
+                    row: list[0].cell.row,
+                    col: list[0].cell.col
+                };
+            }
+            return null;
+        }
+
+        // 배치 불가(채워진 격자) 구역 스냅 시 붉은 경고 렌더러
+        function drawInvalidPreviewHighlight(startRow, startCol, block) {
+            const baseR = block.cells[0][0];
+            const baseC = block.cells[0][1];
+            
+            block.cells.forEach(([r, c]) => {
+                const targetR = startRow + (r - baseR);
+                const targetC = startCol + (c - baseC);
+                
+                if (targetR >= 0 && targetR < GRID_SIZE && targetC >= 0 && targetC < GRID_SIZE) {
+                    const cellEl = cachedCellElements[targetR]?.[targetC];
+                    if (cellEl) {
+                        cellEl.className += ' bg-error/30 border border-error/50 scale-95 shadow-[0_0_8px_rgba(255,180,171,0.5)]';
+                        lastPreviewedCells.push({ r: targetR, c: targetC });
+                    }
+                }
+            });
         }
 
         function isValidPlacement(startRow, startCol, block) {
