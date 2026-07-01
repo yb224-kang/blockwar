@@ -1511,16 +1511,10 @@
                     drawInvalidPreviewHighlight(targetCell.row, targetCell.col, block);
                 }
                 
-                // [UX 개량] 자석 스냅 맺힘 시 드래그 헬퍼를 투명화하지 않고, 헬퍼 좌표 자체를 격자 중심으로 강제 밀착 고정!
-                const centerCell = cellCenters.find(c => c.row === targetCell.row && c.col === targetCell.col);
-                if (centerCell) {
-                    const finalX = centerCell.x - (dragHelperEl.offsetWidth / 2);
-                    const finalY = centerCell.y - (dragHelperEl.offsetHeight / 2);
-                    dragHelperEl.style.transform = `translate3d(${finalX}px, ${finalY}px, 0)`;
-                }
-                dragHelperEl.classList.remove('opacity-0'); // 투명화 강제 방지
+                // [UX 개량] 자석 스냅 맺힘 시 두 겹 겹침 방지: 손가락 밑 윗 레이어(드래그 헬퍼)는 투명화하고 아래 레이어(보드 격자 프리뷰)만 노출!
+                dragHelperEl.classList.add('opacity-0');
             } else {
-                // 스냅 범위 밖에서는 헬퍼 투명화 원복
+                // 스냅 범위 밖에서는 헬퍼 투명화 원복 (손밑 헬퍼 노출)
                 dragHelperEl.classList.remove('opacity-0');
             }
         }
@@ -1723,7 +1717,7 @@
             const baseR = block.cells[0][0];
             const baseC = block.cells[0][1];
             
-            // 1. 블록 셀 자체 하이라이트 적용
+            // 1. 블록 셀 자체 하이라이트 적용 (테마별 실물 3D 입체 스킨 입히기)
             block.cells.forEach(([r, c]) => {
                 const targetR = startRow + (r - baseR);
                 const targetC = startCol + (c - baseC);
@@ -1731,12 +1725,11 @@
                 if (targetR >= 0 && targetR < GRID_SIZE && targetC >= 0 && targetC < GRID_SIZE) {
                     const cellEl = cachedCellElements[targetR]?.[targetC];
                     if (cellEl) {
-                        const colors = {
-                            primary: 'bg-primary/40 border border-primary/60 scale-95 shadow-[0_0_10px_#adc6ff]',
-                            secondary: 'bg-secondary/40 border border-secondary/60 scale-95 shadow-[0_0_10px_#ffb0cd]',
-                            tertiary: 'bg-tertiary/40 border border-tertiary/60 scale-95 shadow-[0_0_10px_#4edea3]'
-                        };
-                        cellEl.className += ' ' + colors[block.color];
+                        const themeColors = THEME_COLORS[settings.theme] || THEME_COLORS.neon;
+                        const blockStyle = themeColors[block.color] || 'bg-primary';
+                        
+                        // 투명 가이드 대신, 격자 크기 1:1로 꽉 채워진 실물 3D 블록 모양을 칠해줌
+                        cellEl.className += ' ' + blockStyle;
                         lastPreviewedCells.push({ r: targetR, c: targetC });
                     }
                 }
