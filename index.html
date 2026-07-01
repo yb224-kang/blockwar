@@ -87,6 +87,16 @@
         .animate-drop {
             animation: block-drop 0.22s cubic-bezier(0.175, 0.885, 0.32, 1.25) forwards;
         }
+
+        /* 피격 시 화면 흔들림 애니메이션 */
+        @keyframes shake {
+            0%, 100% { transform: translate(0, 0); }
+            10%, 30%, 50%, 70%, 90% { transform: translate(-3px, -1px); }
+            20%, 40%, 60%, 80% { transform: translate(3px, 1px); }
+        }
+        .animate-shake {
+            animation: shake 0.3s ease-in-out;
+        }
     </style>
     <script id="tailwind-config">
         tailwind.config = {
@@ -200,28 +210,37 @@
     <!-- Main Game Area -->
     <main class="flex-grow pt-16 pb-16 relative flex flex-col items-center justify-center gap-y-1.5 select-none overflow-hidden">
         
-        <!-- TOP AREA: 상대방 미니 보드 (싱글플레이 시에는 숨김(hidden) 처리하여 세로 공간 대폭 절약) -->
-        <section class="w-full hidden flex-col items-center justify-center flex-shrink-0 mt-1">
-            <div class="relative w-24 aspect-square border border-outline-variant/30 rounded-lg overflow-hidden bg-surface-dim opacity-40">
-                <div class="absolute inset-0 grid-line" style="background-size: 10% 10%;"></div>
-                <div class="absolute inset-1 grid grid-cols-10 grid-rows-10 gap-[1px]">
-                    <div class="col-start-3 row-start-3 bg-secondary rounded-[1px] opacity-30"></div>
-                    <div class="col-start-4 row-start-3 bg-secondary rounded-[1px] opacity-30"></div>
+        <!-- TOP AREA: 상대방 미니 보드 (동적 1v1 PvP 모드 시 노출) -->
+        <section id="opponent-panel" class="w-full hidden flex-col items-center justify-center flex-shrink-0 mt-1">
+            <div class="relative w-24 aspect-square border border-outline-variant/30 rounded-lg overflow-hidden bg-surface-dim shadow-inner">
+                <!-- AI Grid Cells (JS로 동적 렌더링) -->
+                <div id="ai-board-grid" class="absolute inset-0.5 grid grid-cols-10 grid-rows-10 gap-[1px] p-[1px]">
+                    <!-- Rendered by JS -->
                 </div>
-                <div class="absolute bottom-0 left-0 right-0 bg-surface-variant/80 py-[1px]">
-                    <p class="text-center text-[7px] font-bold text-on-surface-variant uppercase tracking-widest">PvP Offline</p>
+                <div class="absolute bottom-0 left-0 right-0 bg-black/75 py-[1px]">
+                    <p id="ai-status-text" class="text-center text-[6px] font-bold text-secondary uppercase tracking-widest">KYLE_REXX (AI)</p>
                 </div>
             </div>
-            <div class="mt-[2px] flex items-center gap-xs">
-                <span class="font-label-mono text-[8px] text-on-surface-variant/40">OPPONENT: OFFLINE</span>
+            <div class="mt-[3px] flex flex-col items-center w-24">
+                <!-- AI HP Bar -->
+                <div class="w-full h-1 bg-surface-container-highest rounded-full overflow-hidden border border-outline-variant/20">
+                    <div id="ai-hp-bar" class="h-full bg-secondary w-full transition-all duration-300"></div>
+                </div>
+                <span class="font-label-mono text-[7px] text-on-surface-variant/60 mt-[2px]">SCORE: <span id="ai-score-val">0</span></span>
             </div>
         </section>
 
         <!-- MIDDLE AREA (타임 프로그레스바): 너비를 보드판과 동기화 (300px) -->
         <div class="w-full max-w-[300px] flex flex-col gap-[3px] mx-auto px-1 flex-shrink-0">
-            <div class="flex justify-between items-end px-1"><span class="font-label-mono text-[9px] text-on-surface-variant uppercase tracking-widest">Singleplay Mode</span><span id="combo-display" class="font-label-mono text-label-mono text-secondary font-bold invisible">COMBO x0</span></div>
+            <div class="flex justify-between items-end px-1">
+                <span id="mode-text" class="font-label-mono text-[9px] text-on-surface-variant uppercase tracking-widest">Singleplay Mode</span>
+                <div class="flex gap-2 items-center">
+                    <span id="timer-text" class="font-label-mono text-[9px] text-secondary hidden">15.0s</span>
+                    <span id="combo-display" class="font-label-mono text-label-mono text-secondary font-bold invisible">COMBO x0</span>
+                </div>
+            </div>
             <div class="h-2 w-full bg-surface-container-highest/20 rounded-full overflow-hidden border border-outline-variant/20 relative">
-                <div class="h-full bg-gradient-to-r from-primary to-secondary w-full transition-all duration-300"></div>
+                <div id="timer-bar" class="h-full bg-gradient-to-r from-primary to-secondary w-full transition-all duration-300"></div>
             </div>
         </div>
 
@@ -315,6 +334,16 @@
                 </div>
                 <div class="flex items-center justify-between">
                     <div>
+                        <p class="font-body-lg text-sm text-on-surface">게임 모드</p>
+                        <p class="text-xs text-on-surface-variant/60">싱글플레이 또는 1v1 PvP 배틀을 선택합니다.</p>
+                    </div>
+                    <select id="select-game-mode" class="bg-surface border-outline-variant rounded text-xs text-on-surface focus:ring-primary">
+                        <option value="single" selected>싱글플레이</option>
+                        <option value="pvp">1v1 PvP 배틀 (vs AI)</option>
+                    </select>
+                </div>
+                <div class="flex items-center justify-between">
+                    <div>
                         <p class="font-body-lg text-sm text-on-surface">보드판 크기 (NxN)</p>
                         <p class="text-xs text-on-surface-variant/60">퍼즐판의 격자 크기를 설정합니다.</p>
                     </div>
@@ -338,9 +367,9 @@
     <!-- Game Over Modal -->
     <div id="modal-gameover" class="fixed inset-0 bg-black/85 backdrop-blur-md z-[100] hidden flex items-center justify-center p-md">
         <div class="bg-surface-container rounded-xl w-full max-w-sm p-lg border border-outline/30 flex flex-col gap-md items-center text-center shadow-2xl">
-            <span class="material-symbols-outlined text-6xl text-error animate-bounce">skull</span>
-            <h2 class="font-headline-md text-error text-3xl font-black italic tracking-wider">GAME OVER</h2>
-            <p class="text-on-surface-variant text-sm mt-xs">더 이상 배치할 수 있는 블록이 없습니다!</p>
+            <span id="gameover-icon" class="material-symbols-outlined text-6xl text-error animate-bounce">skull</span>
+            <h2 id="gameover-title" class="font-headline-md text-error text-3xl font-black italic tracking-wider">GAME OVER</h2>
+            <p id="gameover-desc" class="text-on-surface-variant text-sm mt-xs">더 이상 배치할 수 있는 블록이 없습니다!</p>
             <div class="my-md bg-surface-dim/80 px-xl py-md rounded-xl border border-outline-variant/20 w-full">
                 <p class="text-xs text-on-surface-variant">최종 획득 점수</p>
                 <p id="gameover-final-score" class="font-headline-md text-4xl text-primary font-black">12,450</p>
@@ -382,8 +411,19 @@
         let settings = {
             colorblind: false,
             stoneHP: 2,
-            gridSize: 10
+            gridSize: 10,
+            gameMode: 'single'
         };
+
+        // PvP & 타이머 상태
+        let timeLeft = 15.0;
+        let timerInterval = null;
+        let aiBoard = [];
+        let aiScore = 0;
+        let aiCombo = 0;
+        let aiSlots = [null, null, null];
+        let aiHP = 100;
+        let aiInterval = null;
 
         // UI 캐싱
         const boardGridEl = document.getElementById('board-grid');
@@ -397,6 +437,16 @@
         
         const toggleColorblind = document.getElementById('toggle-colorblind');
         const selectStoneHP = document.getElementById('select-stone-hp');
+        const selectGridSize = document.getElementById('select-grid-size');
+        const selectGameMode = document.getElementById('select-game-mode');
+
+        const opponentPanel = document.getElementById('opponent-panel');
+        const aiBoardGridEl = document.getElementById('ai-board-grid');
+        const aiScoreValEl = document.getElementById('ai-score-val');
+        const aiHpBarEl = document.getElementById('ai-hp-bar');
+        const timerBarEl = document.getElementById('timer-bar');
+        const timerTextEl = document.getElementById('timer-text');
+        const modeTextEl = document.getElementById('mode-text');
 
         // --- 3. INIT ENGINE ---
         function initGame() {
@@ -433,6 +483,52 @@
             // 슬롯에 블록 채우기
             fillAllSlots();
             
+            // --- PvP 모드 초기화 ---
+            if (settings.gameMode === 'pvp') {
+                opponentPanel.classList.remove('hidden');
+                timerTextEl.classList.remove('hidden');
+                modeTextEl.innerText = "Time Remaining";
+                
+                aiScore = 0;
+                aiHP = 100;
+                aiCombo = 0;
+                aiScoreValEl.innerText = "0";
+                aiHpBarEl.style.width = "100%";
+                
+                // AI 보드 초기화
+                aiBoard = Array(GRID_SIZE).fill(null).map(() => 
+                    Array(GRID_SIZE).fill(null).map(() => ({
+                        type: 'empty',
+                        color: null,
+                        health: 0,
+                        maxHealth: 0,
+                        patternClass: null
+                    }))
+                );
+                
+                // AI 돌 스폰
+                spawnStonesAI(4);
+                // AI 슬롯 리필
+                fillAllSlotsAI();
+                // AI 렌더
+                renderAiBoard();
+                
+                // 타이머 구동
+                startTimer();
+                // AI 의사결정 루틴 (2.5초마다 가동)
+                startAiRoutine();
+            } else {
+                opponentPanel.classList.add('hidden');
+                timerTextEl.classList.add('hidden');
+                modeTextEl.innerText = "Singleplay Mode";
+                
+                // 타이머 & AI 해제
+                stopTimer();
+                stopAiRoutine();
+                timerBarEl.style.width = "100%";
+                timerBarEl.className = "h-full bg-gradient-to-r from-primary to-secondary w-full transition-all duration-300";
+            }
+            
             // 드로잉
             renderBoard();
             renderSlots();
@@ -460,6 +556,439 @@
                     spawned++;
                 }
             }
+        }
+
+        // --- PvP & 가상 AI 서포트 함수 세트 ---
+        function spawnStonesAI(count) {
+            const finalCount = GRID_SIZE === 8 ? 2 : (GRID_SIZE === 12 ? 6 : count);
+            let spawned = 0;
+            while (spawned < finalCount) {
+                const r = Math.floor(Math.random() * (GRID_SIZE - 2)) + 1;
+                const c = Math.floor(Math.random() * (GRID_SIZE - 2)) + 1;
+                if (aiBoard[r][c].type === 'empty') {
+                    aiBoard[r][c] = {
+                        type: 'stone',
+                        color: null,
+                        health: settings.stoneHP,
+                        maxHealth: settings.stoneHP,
+                        patternClass: null
+                    };
+                    spawned++;
+                }
+            }
+        }
+
+        function fillAllSlotsAI() {
+            for (let i = 0; i < 3; i++) {
+                aiSlots[i] = getRandomBlockBasedOnScore(aiScore);
+            }
+        }
+
+        function renderAiBoard() {
+            if (!aiBoardGridEl) return;
+            aiBoardGridEl.innerHTML = '';
+            aiBoardGridEl.style.gridTemplateColumns = `repeat(${GRID_SIZE}, minmax(0, 1fr))`;
+            aiBoardGridEl.style.gridTemplateRows = `repeat(${GRID_SIZE}, minmax(0, 1fr))`;
+
+            for (let r = 0; r < GRID_SIZE; r++) {
+                for (let c = 0; c < GRID_SIZE; c++) {
+                    const cell = aiBoard[r][c];
+                    const cellEl = document.createElement('div');
+                    cellEl.className = 'w-full h-full rounded-[1px] relative ';
+                    
+                    if (cell.type === 'empty') {
+                        cellEl.classList.add('bg-white/[0.04]');
+                    } else if (cell.type === 'block') {
+                        const colorMap = {
+                            primary: 'bg-primary/80 shadow-[0_0_4px_rgba(173,198,255,0.6)]',
+                            secondary: 'bg-secondary/80 shadow-[0_0_4px_rgba(255,176,205,0.6)]',
+                            tertiary: 'bg-tertiary/80 shadow-[0_0_4px_rgba(78,222,163,0.6)]'
+                        };
+                        cellEl.className += colorMap[cell.color] || 'bg-outline';
+                        
+                        if (settings.colorblind && cell.patternClass) {
+                            cellEl.classList.add(cell.patternClass);
+                        }
+                    } else if (cell.type === 'stone') {
+                        cellEl.classList.add('stone-texture', 'opacity-60');
+                    }
+                    
+                    aiBoardGridEl.appendChild(cellEl);
+                }
+            }
+        }
+
+        // 15초 타이머 제어 함수
+        function startTimer() {
+            stopTimer();
+            timeLeft = 15.0;
+            updateTimerUI();
+            
+            timerInterval = setInterval(() => {
+                if (settings.gameMode !== 'pvp') {
+                    stopTimer();
+                    return;
+                }
+                
+                timeLeft -= 0.1;
+                if (timeLeft <= 0) {
+                    timeLeft = 0;
+                    stopTimer();
+                    triggerGameOver(false, "제한 시간 초과로 패배했습니다!");
+                }
+                updateTimerUI();
+            }, 100);
+        }
+
+        function stopTimer() {
+            if (timerInterval) {
+                clearInterval(timerInterval);
+                timerInterval = null;
+            }
+        }
+
+        function resetTimer() {
+            if (settings.gameMode === 'pvp') {
+                timeLeft = 15.0;
+                updateTimerUI();
+            }
+        }
+
+        function updateTimerUI() {
+            if (!timerBarEl) return;
+            const percent = (timeLeft / 15.0) * 100;
+            timerBarEl.style.width = `${percent}%`;
+            
+            if (timerTextEl) {
+                timerTextEl.innerText = `${timeLeft.toFixed(1)}s`;
+            }
+            
+            if (timeLeft <= 3.0) {
+                timerBarEl.className = "h-full bg-error animate-pulse w-full transition-all duration-100";
+                if (timerTextEl) {
+                    timerTextEl.className = "font-label-mono text-[9px] text-error font-bold animate-pulse";
+                }
+            } else {
+                timerBarEl.className = "h-full bg-gradient-to-r from-primary to-secondary w-full transition-all duration-300";
+                if (timerTextEl) {
+                    timerTextEl.className = "font-label-mono text-[9px] text-secondary";
+                }
+            }
+        }
+
+        // 가상 AI 루틴 제어 함수
+        function startAiRoutine() {
+            stopAiRoutine();
+            aiInterval = setInterval(() => {
+                if (settings.gameMode !== 'pvp') {
+                    stopAiRoutine();
+                    return;
+                }
+                processAiTurn();
+            }, 2500);
+        }
+
+        function stopAiRoutine() {
+            if (aiInterval) {
+                clearInterval(aiInterval);
+                aiInterval = null;
+            }
+        }
+
+        // AI 의사결정 코어 알고리즘
+        function processAiTurn() {
+            let targetSlotIndex = aiSlots.findIndex(s => s !== null);
+            if (targetSlotIndex === -1) {
+                fillAllSlotsAI();
+                targetSlotIndex = 0;
+            }
+            
+            const block = aiSlots[targetSlotIndex];
+            let validPositions = [];
+            const baseR = block.cells[0][0];
+            const baseC = block.cells[0][1];
+            
+            for (let r = 0; r < GRID_SIZE; r++) {
+                for (let c = 0; c < GRID_SIZE; c++) {
+                    let isValid = true;
+                    for (const [br, bc] of block.cells) {
+                        const tr = r + (br - baseR);
+                        const tc = c + (bc - baseC);
+                        if (tr < 0 || tr >= GRID_SIZE || tc < 0 || tc >= GRID_SIZE) {
+                            isValid = false;
+                            break;
+                        }
+                        if (aiBoard[tr][tc].type !== 'empty') {
+                            isValid = false;
+                            break;
+                        }
+                    }
+                    if (isValid) {
+                        validPositions.push({ row: r, col: c });
+                    }
+                }
+            }
+            
+            if (validPositions.length === 0) {
+                const otherIndices = aiSlots.map((s, idx) => s !== null && idx !== targetSlotIndex ? idx : null).filter(v => v !== null);
+                let foundAlt = false;
+                for (let altIdx of otherIndices) {
+                    const altBlock = aiSlots[altIdx];
+                    const altBaseR = altBlock.cells[0][0];
+                    const altBaseC = altBlock.cells[0][1];
+                    for (let r = 0; r < GRID_SIZE; r++) {
+                        for (let c = 0; c < GRID_SIZE; c++) {
+                            let isValid = true;
+                            for (const [br, bc] of altBlock.cells) {
+                                const tr = r + (br - altBaseR);
+                                const tc = c + (bc - altBaseC);
+                                if (tr < 0 || tr >= GRID_SIZE || tc < 0 || tc >= GRID_SIZE) {
+                                    isValid = false;
+                                    break;
+                                }
+                                if (aiBoard[tr][tc].type !== 'empty') {
+                                    isValid = false;
+                                    break;
+                                }
+                            }
+                            if (isValid) {
+                                validPositions.push({ row: r, col: c });
+                                targetSlotIndex = altIdx;
+                                foundAlt = true;
+                                break;
+                            }
+                        }
+                        if (foundAlt) break;
+                    }
+                }
+                
+                if (validPositions.length === 0) {
+                    stopAiRoutine();
+                    stopTimer();
+                    triggerGameOver(true, "상대방 AI가 블록을 더 이상 배치하지 못해 승리했습니다!");
+                    return;
+                }
+            }
+            
+            const targetPos = validPositions[Math.floor(Math.random() * validPositions.length)];
+            const targetBlock = aiSlots[targetSlotIndex];
+            const activeBaseR = targetBlock.cells[0][0];
+            const activeBaseC = targetBlock.cells[0][1];
+            
+            targetBlock.cells.forEach(([br, bc]) => {
+                const tr = targetPos.row + (br - activeBaseR);
+                const tc = targetPos.col + (bc - activeBaseC);
+                aiBoard[tr][tc] = {
+                    type: 'block',
+                    color: targetBlock.color,
+                    health: 0,
+                    maxHealth: 0,
+                    patternClass: targetBlock.patternClass
+                };
+            });
+            
+            aiSlots[targetSlotIndex] = null;
+            aiScore += targetBlock.cells.length * 5;
+            
+            processAiLinesAndScores();
+            
+            if (aiSlots.every(s => s === null)) {
+                fillAllSlotsAI();
+            }
+            
+            renderAiBoard();
+            if (aiScoreValEl) {
+                aiScoreValEl.innerText = aiScore.toString();
+            }
+        }
+
+        function processAiLinesAndScores() {
+            let rowsToClear = [];
+            let colsToClear = [];
+            
+            for (let r = 0; r < GRID_SIZE; r++) {
+                if (aiBoard[r].every(cell => cell.type !== 'empty')) {
+                    rowsToClear.push(r);
+                }
+            }
+            
+            for (let c = 0; c < GRID_SIZE; c++) {
+                let isFull = true;
+                for (let r = 0; r < GRID_SIZE; r++) {
+                    if (aiBoard[r][c].type === 'empty') {
+                        isFull = false;
+                        break;
+                    }
+                }
+                if (isFull) {
+                    colsToClear.push(c);
+                }
+            }
+            
+            const totalLines = rowsToClear.length + colsToClear.length;
+            if (totalLines > 0) {
+                aiCombo++;
+                
+                rowsToClear.forEach(r => {
+                    for (let c = 0; c < GRID_SIZE; c++) {
+                        if (aiBoard[r][c].type === 'stone') {
+                            aiBoard[r][c].health--;
+                        }
+                    }
+                });
+                
+                colsToClear.forEach(c => {
+                    for (let r = 0; r < GRID_SIZE; r++) {
+                        if (aiBoard[r][c].type === 'stone') {
+                            aiBoard[r][c].health--;
+                        }
+                    }
+                });
+                
+                rowsToClear.forEach(r => {
+                    for (let c = 0; c < GRID_SIZE; c++) {
+                        if (aiBoard[r][c].type === 'block' || (aiBoard[r][c].type === 'stone' && aiBoard[r][c].health <= 0)) {
+                            aiBoard[r][c] = { type: 'empty', color: null, health: 0, maxHealth: 0, patternClass: null };
+                        }
+                    }
+                });
+                
+                colsToClear.forEach(c => {
+                    for (let r = 0; r < GRID_SIZE; r++) {
+                        if (aiBoard[r][c].type === 'block' || (aiBoard[r][c].type === 'stone' && aiBoard[r][c].health <= 0)) {
+                            aiBoard[r][c] = { type: 'empty', color: null, health: 0, maxHealth: 0, patternClass: null };
+                        }
+                    }
+                });
+                
+                const basePoints = totalLines * 100;
+                const comboBonus = (aiCombo - 1) * 50;
+                aiScore += (basePoints + comboBonus);
+                
+                // AI 콤보 시 플레이어 쪽에 파티클 공격 투하
+                if (aiCombo >= 1) {
+                    triggerAttackToPlayer();
+                }
+            } else {
+                aiCombo = 0;
+            }
+        }
+
+        // 플레이어 공격 전송 (돌 투하 + HP 차감)
+        function triggerAttackToOpponent() {
+            createAttackParticle(true);
+            
+            let emptyCells = [];
+            for (let r = 0; r < GRID_SIZE; r++) {
+                for (let c = 0; c < GRID_SIZE; c++) {
+                    if (aiBoard[r][c].type === 'empty') {
+                        emptyCells.push({ r, c });
+                    }
+                }
+            }
+            
+            if (emptyCells.length > 0) {
+                const target = emptyCells[Math.floor(Math.random() * emptyCells.length)];
+                aiBoard[target.r][target.c] = {
+                    type: 'stone',
+                    color: null,
+                    health: settings.stoneHP,
+                    maxHealth: settings.stoneHP,
+                    patternClass: null
+                };
+                renderAiBoard();
+            }
+            
+            aiHP = Math.max(0, aiHP - 15);
+            if (aiHpBarEl) {
+                aiHpBarEl.style.width = `${aiHP}%`;
+            }
+            
+            if (aiHP <= 0) {
+                stopAiRoutine();
+                stopTimer();
+                triggerGameOver(true, "상대방의 체력을 전멸시켜 승리했습니다!");
+            }
+        }
+
+        // AI의 공격 수신 (돌 강제 투하 + 화면 흔들림)
+        function triggerAttackToPlayer() {
+            createAttackParticle(false);
+            
+            const boardContainer = document.getElementById('game-board-container');
+            if (boardContainer) {
+                boardContainer.classList.add('animate-shake');
+                setTimeout(() => {
+                    boardContainer.classList.remove('animate-shake');
+                }, 350);
+            }
+            
+            let emptyCells = [];
+            for (let r = 0; r < GRID_SIZE; r++) {
+                for (let c = 0; c < GRID_SIZE; c++) {
+                    if (board[r][c].type === 'empty') {
+                        emptyCells.push({ r, c });
+                    }
+                }
+            }
+            
+            if (emptyCells.length > 0) {
+                const target = emptyCells[Math.floor(Math.random() * emptyCells.length)];
+                board[target.r][target.c] = {
+                    type: 'stone',
+                    color: null,
+                    health: settings.stoneHP,
+                    maxHealth: settings.stoneHP,
+                    patternClass: null
+                };
+                renderBoard();
+                
+                if ('vibrate' in navigator) {
+                    navigator.vibrate(100);
+                }
+            }
+        }
+
+        // 빛나는 파티클 미사일 투사
+        function createAttackParticle(fromPlayer) {
+            const particle = document.createElement('div');
+            particle.className = 'fixed pointer-events-none z-[80] rounded-full animate-pulse shadow-lg';
+            
+            const startRect = fromPlayer 
+                ? boardGridEl.getBoundingClientRect() 
+                : opponentPanel.getBoundingClientRect();
+                
+            const endRect = fromPlayer 
+                ? opponentPanel.getBoundingClientRect() 
+                : boardGridEl.getBoundingClientRect();
+                
+            const startX = startRect.left + startRect.width / 2;
+            const startY = startRect.top + startRect.height / 2;
+            const endX = endRect.left + endRect.width / 2;
+            const endY = endRect.top + endRect.height / 2;
+            
+            particle.style.left = `${startX}px`;
+            particle.style.top = `${startY}px`;
+            
+            if (fromPlayer) {
+                particle.className += ' w-4 h-4 bg-tertiary shadow-[0_0_15px_#4edea3]';
+            } else {
+                particle.className += ' w-5 h-5 bg-error shadow-[0_0_20px_#ff7b72]';
+            }
+            
+            document.body.appendChild(particle);
+            
+            particle.style.transition = 'all 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
+            setTimeout(() => {
+                particle.style.left = `${endX}px`;
+                particle.style.top = `${endY}px`;
+                particle.style.transform = 'scale(0.2)';
+                particle.style.opacity = '0.3';
+            }, 50);
+            
+            setTimeout(() => {
+                particle.remove();
+            }, 650);
         }
 
         // --- 4. RENDER PROCEDURES ---
@@ -939,6 +1468,9 @@
             // 단순 배치 시 10점 획득
             score += block.cells.length * 5;
             updateScoreUI();
+            
+            // 1v1 PvP 대전 시 배치할 때마다 타이머를 15초로 즉각 갱신
+            resetTimer();
         }
 
         // 라인 클리어 로직
@@ -1005,6 +1537,11 @@
                 
                 // 타격감 진동 효과
                 if ('vibrate' in navigator) navigator.vibrate([30, 20, 30]);
+                
+                // PvP 모드일 때 콤보나 라인 폭파 발생 시 상대를 향한 공격 구동
+                if (settings.gameMode === 'pvp' && combo >= 1) {
+                    triggerAttackToOpponent();
+                }
             } else {
                 combo = 0;
             }
@@ -1049,11 +1586,10 @@
         }
 
         function checkGameOver() {
-            // 현재 슬롯에 남은 블록 중 하나라도 배치할 수 있는 자리가 있는지 검사
             let playable = false;
             
             const activeSlots = slots.filter(s => s !== null);
-            if (activeSlots.length === 0) return; // 배치할 수 있는 블록 없음 (슬롯 충전 직전)
+            if (activeSlots.length === 0) return;
             
             for (let block of activeSlots) {
                 for (let r = 0; r < GRID_SIZE; r++) {
@@ -1069,12 +1605,65 @@
             }
             
             if (!playable) {
-                // 게임 오버!
-                document.getElementById('gameover-final-score').innerText = score.toLocaleString();
-                modalGameOver.classList.remove('hidden');
-                
                 if ('vibrate' in navigator) navigator.vibrate([100, 50, 100, 50, 300]);
+                triggerGameOver(false, "더 이상 블록을 배치할 수 없습니다!");
             }
+        }
+
+        function triggerGameOver(isWin = false, customDesc = null) {
+            stopTimer();
+            stopAiRoutine();
+            
+            const iconEl = document.getElementById('gameover-icon');
+            const titleEl = document.getElementById('gameover-title');
+            const descEl = document.getElementById('gameover-desc');
+            const finalScoreEl = document.getElementById('gameover-final-score');
+            
+            if (finalScoreEl) {
+                finalScoreEl.innerText = score.toLocaleString();
+            }
+            
+            if (settings.gameMode === 'pvp') {
+                if (isWin) {
+                    if (iconEl) {
+                        iconEl.innerText = 'emoji_events';
+                        iconEl.className = 'material-symbols-outlined text-6xl text-tertiary animate-bounce';
+                    }
+                    if (titleEl) {
+                        titleEl.innerText = 'VICTORY';
+                        titleEl.className = 'font-headline-md text-tertiary text-3xl font-black italic tracking-wider';
+                    }
+                    if (descEl) {
+                        descEl.innerText = customDesc || '상대방 AI를 물리치고 승리했습니다!';
+                    }
+                } else {
+                    if (iconEl) {
+                        iconEl.innerText = 'skull';
+                        iconEl.className = 'material-symbols-outlined text-6xl text-error animate-bounce';
+                    }
+                    if (titleEl) {
+                        titleEl.innerText = 'DEFEAT';
+                        titleEl.className = 'font-headline-md text-error text-3xl font-black italic tracking-wider';
+                    }
+                    if (descEl) {
+                        descEl.innerText = customDesc || '제한 시간이 만료되었거나 배치 공간이 부족합니다.';
+                    }
+                }
+            } else {
+                if (iconEl) {
+                     iconEl.innerText = 'skull';
+                     iconEl.className = 'material-symbols-outlined text-6xl text-error animate-bounce';
+                }
+                if (titleEl) {
+                     titleEl.innerText = 'GAME OVER';
+                     titleEl.className = 'font-headline-md text-error text-3xl font-black italic tracking-wider';
+                }
+                if (descEl) {
+                     descEl.innerText = customDesc || '더 이상 배치할 수 있는 블록이 없습니다!';
+                }
+            }
+            
+            modalGameOver.classList.remove('hidden');
         }
 
         // --- 7. PARTICLE SYSTEM ---
@@ -1112,6 +1701,7 @@
                 toggleColorblind.checked = settings.colorblind;
                 selectStoneHP.value = settings.stoneHP;
                 selectGridSize.value = settings.gridSize;
+                selectGameMode.value = settings.gameMode;
                 
                 modalSettings.classList.remove('hidden');
             });
@@ -1124,6 +1714,7 @@
                 settings.colorblind = toggleColorblind.checked;
                 settings.stoneHP = parseInt(selectStoneHP.value);
                 settings.gridSize = parseInt(selectGridSize.value);
+                settings.gameMode = selectGameMode.value;
                 initGame();
             });
             
