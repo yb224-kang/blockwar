@@ -1299,6 +1299,9 @@
         let dragOffset = { x: 0, y: -65 }; // 손가락 안 가리도록 위로 오프셋
         let touchStartPos = { x: 0, y: 0 };
         let cellCenters = []; // 보드 내 셀들의 화면 상 중심 좌표 캐싱
+        let cachedCellElements = []; // 보드 셀 DOM 엘리먼트 캐시 (무거운 querySelector 제거용)
+        let lastPreviewedCells = []; // 이전 프레임에서 프리뷰 하이라이트된 셀 좌표 기억 장치
+        let lastTargetCellKey = ""; // 이전 자석 스냅 셀 듀플리케이션 방지 키
         
         function setupDragEvents() {
             const slotContainers = document.querySelectorAll('.slot-container');
@@ -1317,20 +1320,24 @@
             window.addEventListener('mouseup', handleDragEnd);
         }
 
-        // 보드 내 각 셀의 실시간 중심 좌표 캐싱
+        // 보드 내 각 셀의 실시간 중심 좌표 캐싱 (2차원 캐시 테이블 구축 추가)
         function cacheCellCenters() {
             cellCenters = [];
+            cachedCellElements = Array(GRID_SIZE).fill(null).map(() => Array(GRID_SIZE).fill(null));
             const cellElements = boardGridEl.querySelectorAll('[data-row]');
             cellElements.forEach(el => {
+                const r = parseInt(el.dataset.row);
+                const c = parseInt(el.dataset.col);
                 const rect = el.getBoundingClientRect();
                 cellCenters.push({
-                    row: parseInt(el.dataset.row),
-                    col: parseInt(el.dataset.col),
+                    row: r,
+                    col: c,
                     x: rect.left + rect.width / 2,
                     y: rect.top + rect.height / 2,
                     width: rect.width,
                     height: rect.height
                 });
+                cachedCellElements[r][c] = el;
             });
         }
 
@@ -1361,6 +1368,7 @@
             
             // 보드 각 셀의 위치 캐싱
             cacheCellCenters();
+            lastTargetCellKey = "";
             
             // 드래그 헬퍼 준비
             renderDragHelper(slots[index], eventClientX, eventClientY);
@@ -1442,6 +1450,14 @@
             // 자석 효과(Snap-to-Grid)를 적용한 대상 셀 계산
             const block = slots[activeDragIndex];
             const targetCell = getClosestValidCell(clientX, clientY + dragOffset.y, block);
+            
+            const targetKey = targetCell ? `${targetCell.row},${targetCell.col}` : "";
+            if (targetKey === lastTargetCellKey) {
+                // 스냅 대상 격자가 이전 프레임과 동일하면 무거운 DOM 조작을 스킵하여 렉 방지
+                return;
+            }
+            lastTargetCellKey = targetKey;
+            
             clearPreviewHighlights();
             
             if (targetCell) {
@@ -1477,6 +1493,7 @@
             if (slotContainer) slotContainer.classList.remove('opacity-30');
             
             clearPreviewHighlights();
+            lastTargetCellKey = "";
             
             if (placed) {
                 slots[activeDragIndex] = null;
@@ -1578,31 +1595,33 @@
                 const targetR = startRow + (r - baseR);
                 const targetC = startCol + (c - baseC);
                 
-                const cellEl = boardGridEl.querySelector(`[data-row="${targetR}"][data-col="${targetC}"]`);
-                if (cellEl) {
-                    // 흐릿한 배치 미리보기 스타일 적용
-                    const colors = {
-                        primary: 'bg-primary/40 border border-primary/60 scale-95 shadow-[0_0_10px_#adc6ff]',
-                        secondary: 'bg-secondary/40 border border-secondary/60 scale-95 shadow-[0_0_10px_#ffb0cd]',
-                        tertiary: 'bg-tertiary/40 border border-tertiary/60 scale-95 shadow-[0_0_10px_#4edea3]'
-                    };
-                    cellEl.className += ' ' + colors[block.color];
+                if (targetR >= 0 && targetR < GRID_SIZE && targetC >= 0 && targetC < GRID_SIZE) {
+                    const cellEl = cachedCellElements[targetR]?.[targetC];
+                    if (cellEl) {
+                        const colors = {
+                            primary: 'bg-primary/40 border border-primary/60 scale-95 shadow-[0_0_10px_#adc6ff]',
+                            secondary: 'bg-secondary/40 border border-secondary/60 scale-95 shadow-[0_0_10px_#ffb0cd]',
+                            tertiary: 'bg-tertiary/40 border border-tertiary/60 scale-95 shadow-[0_0_10px_#4edea3]'
+                        };
+                        cellEl.className += ' ' + colors[block.color];
+                        lastPreviewedCells.push({ r: targetR, c: targetC });
+                    }
                 }
             });
         }
 
         function clearPreviewHighlights() {
-            // 보드 렌더링 갱신하지 않고 하이라이트 클래스만 제거
-            const cells = boardGridEl.querySelectorAll('[data-row]');
-            cells.forEach(cellEl => {
-                const r = parseInt(cellEl.dataset.row);
-                const c = parseInt(cellEl.dataset.col);
-                const cell = board[r][c];
-                
-                if (cell.type === 'empty') {
-                    cellEl.className = 'w-full h-full rounded-sm transition-all duration-200 relative bg-black/35 shadow-[inset_0_2px_4px_rgba(0,0,0,0.6)] border border-white/[0.02]';
+            const themeColors = THEME_COLORS[settings.theme] || THEME_COLORS.neon;
+            lastPreviewedCells.forEach(({ r, c }) => {
+                const cellEl = cachedCellElements[r]?.[c];
+                if (cellEl) {
+                    const cell = board[r][c];
+                    if (cell.type === 'empty') {
+                        cellEl.className = 'w-full h-full rounded-sm transition-all duration-200 relative ' + themeColors.empty;
+                    }
                 }
             });
+            lastPreviewedCells = [];
         }
 
         function placeBlock(startRow, startCol, block) {
