@@ -1677,6 +1677,7 @@
 
         // 배치 불가(채워진 격자) 구역 스냅 시 붉은 경고 렌더러
         function drawInvalidPreviewHighlight(startRow, startCol, block) {
+        function drawInvalidPreviewHighlight(startRow, startCol, block) {
             const baseR = block.cells[0][0];
             const baseC = block.cells[0][1];
             
@@ -1687,7 +1688,8 @@
                 if (targetR >= 0 && targetR < GRID_SIZE && targetC >= 0 && targetC < GRID_SIZE) {
                     const cellEl = cachedCellElements[targetR]?.[targetC];
                     if (cellEl) {
-                        cellEl.className += ' bg-error/30 border border-error/50 scale-95 shadow-[0_0_8px_rgba(255,180,171,0.5)]';
+                        // relative z-20과 가상 선택자 오버레이를 사용해 무조건 채워진 격자 위로 덮어 씌움
+                        cellEl.className += ' relative z-20 scale-[1.02] shadow-[0_0_12px_#ef4444] border-2 border-red-500 after:absolute after:inset-0 after:bg-red-600/60 after:rounded-md after:z-10';
                         lastPreviewedCells.push({ r: targetR, c: targetC });
                     }
                 }
@@ -1728,8 +1730,8 @@
                         const themeColors = THEME_COLORS[settings.theme] || THEME_COLORS.neon;
                         const blockStyle = themeColors[block.color] || 'bg-primary';
                         
-                        // 투명 가이드 대신, 격자 크기 1:1로 꽉 채워진 실물 3D 블록 모양을 칠해줌
-                        cellEl.className += ' ' + blockStyle;
+                        // 투명 가이드 대신, 격자 크기 1:1로 꽉 채워진 실물 3D 블록 모양을 칠해줌 (relative z-20으로 기존 안착 블록 위로 띄움)
+                        cellEl.className += ' ' + blockStyle + ' relative z-20 scale-[1.02] shadow-[0_0_12px_rgba(255,255,255,0.4)]';
                         lastPreviewedCells.push({ r: targetR, c: targetC });
                     }
                 }
@@ -1806,6 +1808,13 @@
                     const cell = board[r][c];
                     if (cell.type === 'empty') {
                         cellEl.className = 'w-full h-full rounded-sm relative ' + themeColors.empty;
+                    } else if (cell.type === 'block') {
+                        // 원래 채워진 블록의 고유 스킨 클래스로 원상복구하여 붉은 오버레이 흔적 청소
+                        const baseStyle = themeColors[cell.color] || 'bg-primary';
+                        cellEl.className = 'w-full h-full rounded-sm relative ' + baseStyle;
+                        if (settings.colorblind && cell.patternClass) {
+                            cellEl.classList.add(cell.patternClass);
+                        }
                     }
                 }
             });
