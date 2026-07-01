@@ -1486,7 +1486,7 @@
             
             // 빠를 때는 자석 스냅을 무시하여 드래그 헬퍼 깜빡임 및 버벅임 완전 방지 (보정된 targetX, targetY 기준 스냅)
             const block = slots[activeDragIndex];
-            const targetCell = isFast ? null : getClosestCell(targetX, targetY + dragOffset.y);
+            const targetCell = isFast ? null : getClosestCell(targetX, targetY + dragOffset.y, block);
             
             const targetKey = targetCell ? `${targetCell.row},${targetCell.col}` : "";
             if (targetKey === lastTargetCellKey) {
@@ -1528,7 +1528,7 @@
             const targetY = touchStartPos.y + dy * sensitivity;
             
             const block = slots[activeDragIndex];
-            const targetCell = getClosestCell(targetX, targetY + dragOffset.y);
+            const targetCell = getClosestCell(targetX, targetY + dragOffset.y, block);
             
             let placed = false;
             
@@ -1619,8 +1619,23 @@
             return null;
         }
 
-        // 유효 여부에 무관하게 가장 가까운 물리적 격자 탐색 (드래그 스킵 방지)
-        function getClosestCell(x, y) {
+        function isValidBoundary(startRow, startCol, block) {
+            const baseR = block.cells[0][0];
+            const baseC = block.cells[0][1];
+
+            for (const [r, c] of block.cells) {
+                const targetR = startRow + (r - baseR);
+                const targetC = startCol + (c - baseC);
+                
+                if (targetR < 0 || targetR >= GRID_SIZE || targetC < 0 || targetC >= GRID_SIZE) {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        // 유효 여부에 무관하게 가장 가까운 물리적 격자 탐색 (단, 경계 밖으로 삐져나가지 않는 온전한 격자만 매핑)
+        function getClosestCell(x, y, block) {
             if (cellCenters.length === 0) return null;
             
             const maxSnapDistanceSquare = 120 * 120; // 14400
@@ -1629,6 +1644,12 @@
             
             for (let i = 0; i < cellCenters.length; i++) {
                 const cell = cellCenters[i];
+                
+                // 블록 형태가 경계 바깥으로 짤려 변형되는 노드는 스냅 배제
+                if (!isValidBoundary(cell.row, cell.col, block)) {
+                    continue;
+                }
+                
                 const dx = cell.x - x;
                 const dy = cell.y - y;
                 const distSq = dx * dx + dy * dy;
