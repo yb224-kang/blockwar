@@ -467,9 +467,14 @@
           { cells: [[0, 0], [1, 0], [2, 0]], color: 'secondary', patternClass: 'pattern-stripes', name: 'LINE_3_V', difficulty: 'easy' },
           // 2x2 Square
           { cells: [[0, 0], [0, 1], [1, 0], [1, 1]], color: 'tertiary', patternClass: 'pattern-grid', name: 'SQUARE_2', difficulty: 'normal' },
+          // 3x3 Square [NEW]
+          { cells: [[0, 0], [0, 1], [0, 2], [1, 0], [1, 1], [1, 2], [2, 0], [2, 1], [2, 2]], color: 'tertiary', patternClass: 'pattern-grid', name: 'SQUARE_3', difficulty: 'hard' },
           // L-shapes
           { cells: [[0, 0], [1, 0], [2, 0], [2, 1]], color: 'primary', patternClass: 'pattern-dots', name: 'L_RIGHT', difficulty: 'hard' },
           { cells: [[0, 0], [1, 0], [2, 0], [2, -1]], color: 'secondary', patternClass: 'pattern-stripes', name: 'L_LEFT', difficulty: 'hard' },
+          // 6-Cell L-shapes (ㄱ, ㄴ) [NEW]
+          { cells: [[0, 0], [1, 0], [2, 0], [3, 0], [3, 1], [3, 2]], color: 'primary', patternClass: 'pattern-dots', name: 'L_SHAPE_6_V', difficulty: 'hard' },
+          { cells: [[0, 0], [0, 1], [0, 2], [1, 0], [2, 0], [3, 0]], color: 'secondary', patternClass: 'pattern-stripes', name: 'L_SHAPE_6_H', difficulty: 'hard' },
           // T-shape
           { cells: [[0, 0], [0, 1], [0, 2], [1, 1]], color: 'tertiary', patternClass: 'pattern-grid', name: 'T_SHAPE', difficulty: 'normal' }
         ];
