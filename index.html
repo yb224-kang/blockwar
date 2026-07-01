@@ -1,0 +1,1128 @@
+<!DOCTYPE html>
+<html class="dark" lang="ko">
+
+<head>
+    <meta charset="utf-8">
+    <meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport">
+    <title>BATTLE BLAST - Puzzle Arena</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Anybody:ital,wght@0,400..900;1,400..900&amp;family=Rubik:wght@300..900&amp;family=JetBrains+Mono:wght@100..800&amp;display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1" rel="stylesheet">
+    <style>
+        @keyframes pulse-glow {
+            0%, 100% { box-shadow: 0 0 10px rgba(173, 198, 255, 0.2); }
+            50% { box-shadow: 0 0 25px rgba(173, 198, 255, 0.5); }
+        }
+
+        @keyframes attack-pulse {
+            0%, 100% {
+                border-color: rgba(255, 180, 171, 0.4);
+                box-shadow: inset 0 0 15px rgba(147, 0, 10, 0.5);
+            }
+            50% {
+                border-color: rgba(255, 180, 171, 1);
+                box-shadow: inset 0 0 30px rgba(147, 0, 10, 0.8);
+            }
+        }
+
+        @keyframes float-up {
+            0% { transform: translateY(0); opacity: 0; }
+            20% { opacity: 1; }
+            100% { transform: translateY(-60px); opacity: 0; }
+        }
+
+        @keyframes particle-trail {
+            0% { transform: translate(0, 0) scale(1); opacity: 1; }
+            100% { transform: translate(var(--tw-translate-x), var(--tw-translate-y)) scale(0); opacity: 0; }
+        }
+
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .ice-freeze {
+            background: linear-gradient(135deg, rgba(165, 243, 252, 0.4) 0%, rgba(255, 255, 255, 0.2) 100%);
+            backdrop-filter: blur(4px);
+        }
+
+        .stone-texture {
+            background-color: #3b4252;
+            background-image: repeating-linear-gradient(45deg, transparent, transparent 4px, rgba(0, 0, 0, 0.15) 4px, rgba(0, 0, 0, 0.15) 8px);
+        }
+
+        .grid-line {
+            background-image: linear-gradient(to right, rgba(255, 255, 255, 0.04) 1px, transparent 1px),
+                              linear-gradient(to bottom, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+            background-size: 10% 10%;
+        }
+
+        /* 색약 패턴 오버레이 */
+        .pattern-dots {
+            background-image: radial-gradient(rgba(255, 255, 255, 0.6) 20%, transparent 20%);
+            background-size: 6px 6px;
+        }
+        .pattern-stripes {
+            background-image: linear-gradient(45deg, rgba(255, 255, 255, 0.4) 25%, transparent 25%, transparent 50%, rgba(255, 255, 255, 0.4) 50%, rgba(255, 255, 255, 0.4) 75%, transparent 75%, transparent);
+            background-size: 8px 8px;
+        }
+        .pattern-grid {
+            background-image: linear-gradient(rgba(255, 255, 255, 0.4) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 255, 255, 0.4) 1px, transparent 1px);
+            background-size: 5px 5px;
+        }
+
+        /* 드래그 상태 */
+        .dragging-active {
+            touch-action: none;
+            user-select: none;
+        }
+    </style>
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-primary": "#002e6a",
+                        "on-secondary": "#640039",
+                        "on-surface-variant": "#c2c6d6",
+                        "on-secondary-fixed-variant": "#8c0053",
+                        "surface-tint": "#adc6ff",
+                        "secondary-fixed-dim": "#ffb0cd",
+                        "on-surface": "#dae2fd",
+                        "tertiary-container": "#00a572",
+                        "secondary-fixed": "#ffd9e4",
+                        "on-error-container": "#ffdad6",
+                        "surface-dim": "#0b1326",
+                        "on-secondary-fixed": "#3e0022",
+                        "surface-container-lowest": "#060e20",
+                        "outline-variant": "#424754",
+                        "tertiary-fixed-dim": "#4edea3",
+                        "error-container": "#93000a",
+                        "on-error": "#690005",
+                        "background": "#0b1326",
+                        "on-tertiary-fixed-variant": "#005236",
+                        "on-tertiary-container": "#00311f",
+                        "tertiary": "#4edea3",
+                        "surface-container": "#171f33",
+                        "outline": "#8c909f",
+                        "secondary-container": "#aa0266",
+                        "surface-variant": "#2d3449",
+                        "on-tertiary-fixed": "#002113",
+                        "surface": "#0b1326",
+                        "primary-fixed": "#d8e2ff",
+                        "surface-bright": "#31394d",
+                        "on-primary-fixed": "#001a42",
+                        "primary-container": "#4d8eff",
+                        "inverse-surface": "#dae2fd",
+                        "inverse-on-surface": "#283044",
+                        "primary-fixed-dim": "#adc6ff",
+                        "primary": "#adc6ff",
+                        "on-secondary-container": "#ffbad3",
+                        "on-primary-fixed-variant": "#004395",
+                        "on-tertiary": "#003824",
+                        "error": "#ffb4ab",
+                        "surface-container-low": "#131b2e",
+                        "inverse-primary": "#005ac2",
+                        "on-primary-container": "#00285d",
+                        "surface-container-high": "#222a3d",
+                        "tertiary-fixed": "#6ffbbe",
+                        "on-background": "#dae2fd",
+                        "surface-container-highest": "#2d3449",
+                        "secondary": "#ffb0cd"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "sm": "8px",
+                        "xs": "4px",
+                        "unit": "4px",
+                        "md": "16px",
+                        "lg": "24px",
+                        "safe-area-inset": "16px",
+                        "board-gutter": "2px",
+                        "xl": "32px"
+                    },
+                    "fontFamily": {
+                        "headline-md": ["Anybody"],
+                        "body-sm": ["Rubik"],
+                        "display-lg": ["Anybody"],
+                        "body-lg": ["Rubik"],
+                        "label-mono": ["JetBrains Mono"],
+                        "display-lg-mobile": ["Anybody"]
+                    },
+                    "fontSize": {
+                        "headline-md": ["24px", { "lineHeight": "32px", "fontWeight": "700" }],
+                        "body-sm": ["14px", { "lineHeight": "20px", "fontWeight": "400" }],
+                        "display-lg": ["48px", { "lineHeight": "52px", "letterSpacing": "-0.02em", "fontWeight": "800" }],
+                        "body-lg": ["18px", { "lineHeight": "26px", "fontWeight": "400" }],
+                        "label-mono": ["12px", { "lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "500" }],
+                        "display-lg-mobile": ["36px", { "lineHeight": "40px", "fontWeight": "800" }]
+                    }
+                },
+            },
+        }
+    </script>
+</head>
+
+<body class="bg-background text-on-background font-body-sm overflow-hidden h-screen w-screen flex flex-col select-none dragging-active">
+    
+    <!-- Top Navigation Shell -->
+    <header class="fixed top-0 w-full z-50 flex justify-between items-center px-md h-16 bg-surface/80 backdrop-blur-xl border-b border-outline-variant/30">
+        <div class="flex items-center gap-2">
+            <span id="btn-menu" class="material-symbols-outlined text-primary hover:bg-white/10 p-2 rounded-lg transition-all active:scale-95 cursor-pointer">menu</span>
+            <h1 class="font-headline-md text-headline-md-mobile italic font-black text-primary tracking-tighter">BATTLE BLAST</h1>
+        </div>
+        <div class="flex items-center gap-4">
+            <div class="text-right">
+                <p class="font-label-mono text-label-mono text-on-surface-variant uppercase">SCORE</p>
+                <p id="score-val" class="font-headline-md text-headline-md-mobile text-primary leading-none">0</p>
+            </div>
+            <span id="btn-settings" class="material-symbols-outlined text-primary hover:bg-white/10 p-2 rounded-lg transition-all active:scale-95 cursor-pointer">settings</span>
+        </div>
+    </header>
+
+    <!-- Main Game Area -->
+    <main class="flex-grow pt-14 pb-16 relative flex flex-col items-center justify-center gap-y-2 select-none overflow-hidden">
+        
+        <!-- TOP AREA: 상대방 미니 보드 (간결화하여 세로 공간 절약 및 찌그러짐 방지) -->
+        <section class="w-full flex flex-col items-center justify-center flex-shrink-0 mt-1">
+            <div class="relative w-24 aspect-square border border-outline-variant/30 rounded-lg overflow-hidden bg-surface-dim opacity-40">
+                <div class="absolute inset-0 grid-line" style="background-size: 10% 10%;"></div>
+                <div class="absolute inset-1 grid grid-cols-10 grid-rows-10 gap-[1px]">
+                    <div class="col-start-3 row-start-3 bg-secondary rounded-[1px] opacity-30"></div>
+                    <div class="col-start-4 row-start-3 bg-secondary rounded-[1px] opacity-30"></div>
+                </div>
+                <div class="absolute bottom-0 left-0 right-0 bg-surface-variant/80 py-[1px]">
+                    <p class="text-center text-[7px] font-bold text-on-surface-variant uppercase tracking-widest">PvP Offline</p>
+                </div>
+            </div>
+            <div class="mt-[2px] flex items-center gap-xs">
+                <span class="font-label-mono text-[8px] text-on-surface-variant/40">OPPONENT: OFFLINE</span>
+            </div>
+        </section>
+
+        <!-- MIDDLE AREA (타임 프로그레스바): 너비를 보드판과 동기화 (320px) -->
+        <div class="w-full max-w-[320px] flex flex-col gap-[3px] mx-auto px-1 flex-shrink-0">
+            <div class="flex justify-between items-end px-1"><span class="font-label-mono text-[9px] text-on-surface-variant uppercase tracking-widest">Singleplay Mode</span><span id="combo-display" class="font-label-mono text-label-mono text-secondary font-bold invisible">COMBO x0</span></div>
+            <div class="h-2 w-full bg-surface-container-highest/20 rounded-full overflow-hidden border border-outline-variant/20 relative">
+                <div class="h-full bg-gradient-to-r from-primary to-secondary w-full transition-all duration-300"></div>
+            </div>
+        </div>
+
+        <!-- MAIN BOARD AREA: 너비를 320px로 제한하여 세로 비율 및 여백 보존 -->
+        <section class="relative w-full max-w-[320px] flex items-center justify-center mx-auto my-1 flex-shrink-0">
+            <div id="game-board-container" class="relative w-full aspect-square glass-panel rounded-xl p-unit shadow-2xl overflow-hidden select-none">
+                <!-- Grid Lines -->
+                <div class="absolute inset-0 grid-line opacity-10"></div>
+                <!-- 10x10 Grid Cells -->
+                <div id="board-grid" class="relative w-full h-full grid grid-cols-10 grid-rows-10 gap-[2px] p-unit">
+                    <!-- Dynamic rendering by JS -->
+                </div>
+                <!-- Floating Combo UI Container -->
+                <div id="combo-floater" class="absolute inset-0 pointer-events-none hidden flex items-center justify-center">
+                    <span class="font-display-lg text-tertiary italic drop-shadow-[0_0_12px_#4edea3] text-4xl animate-[float-up_1.2s_ease-out_forwards]">COMBO x2</span>
+                </div>
+            </div>
+            
+            <!-- Particle Trail Emitter -->
+            <div class="absolute inset-x-0 bottom-full h-32 pointer-events-none flex justify-center">
+                <div class="particle-emitter relative w-full h-full"></div>
+            </div>
+        </section>
+
+        <!-- BOTTOM AREA: 보드판과 일치하는 320px 너비 및 간격 확보 -->
+        <section class="w-full max-w-[320px] flex items-center justify-center mx-auto mt-2 pb-2 flex-shrink-0">
+            <div class="w-full glass-panel rounded-2xl flex items-center justify-around p-3 relative shadow-lg">
+                <!-- Slot 1 -->
+                <div data-slot="0" class="slot-container w-[28%] aspect-square flex items-center justify-center rounded-xl cursor-pointer transition-all active:scale-95 hover:bg-white/5 relative">
+                    <!-- Rendered dynamically -->
+                </div>
+                <!-- 구분선 1 -->
+                <div class="h-8 w-[1px] bg-outline-variant/30"></div>
+                <!-- Slot 2 -->
+                <div data-slot="1" class="slot-container w-[28%] aspect-square flex items-center justify-center rounded-xl cursor-pointer transition-all active:scale-95 hover:bg-white/5 relative">
+                    <!-- Rendered dynamically -->
+                </div>
+                <!-- 구분선 2 -->
+                <div class="h-8 w-[1px] bg-outline-variant/30"></div>
+                <!-- Slot 3 -->
+                <div data-slot="2" class="slot-container w-[28%] aspect-square flex items-center justify-center rounded-xl cursor-pointer transition-all active:scale-95 hover:bg-white/5 relative">
+                    <!-- Rendered dynamically -->
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Bottom Navigation Bar -->
+    <nav class="fixed bottom-0 w-full z-40 flex justify-around items-center px-lg pb-safe h-16 bg-surface-container/90 backdrop-blur-lg border-t border-outline-variant/20 shadow-lg rounded-t-xl">
+        <button class="flex flex-col items-center justify-center bg-secondary-container text-on-secondary-container rounded-xl px-4 py-1 shadow-[0_0_10px_rgba(170,2,102,0.2)]">
+            <span class="material-symbols-outlined text-[20px]">grid_view</span>
+            <span class="font-label-mono text-[9px] mt-[2px]">PLAY</span>
+        </button>
+        <button class="flex flex-col items-center justify-center text-on-surface-variant/40 p-2 hover:text-primary transition-colors cursor-not-allowed">
+            <span class="material-symbols-outlined text-[20px]">emoji_events</span>
+            <span class="font-label-mono text-[9px] mt-[2px]">LEAGUE</span>
+        </button>
+        <button class="flex flex-col items-center justify-center text-on-surface-variant/40 p-2 hover:text-primary transition-colors cursor-not-allowed">
+            <span class="material-symbols-outlined text-[20px]">military_tech</span>
+            <span class="font-label-mono text-[9px] mt-[2px]">QUESTS</span>
+        </button>
+    </nav>
+
+    <!-- Floating Drag Helper (따라다니는 블록 미리보기) -->
+    <div id="drag-helper" class="fixed pointer-events-none z-[100] hidden opacity-90 transition-transform duration-75"></div>
+
+    <!-- Settings Modal -->
+    <div id="modal-settings" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] hidden flex items-center justify-center p-md">
+        <div class="bg-surface-container rounded-xl w-full max-w-sm p-lg border border-outline-variant/30 flex flex-col gap-md">
+            <h2 class="font-headline-md text-primary text-xl font-bold flex items-center gap-2">
+                <span class="material-symbols-outlined">settings</span>설정
+            </h2>
+            <hr class="border-outline-variant/30">
+            <div class="flex flex-col gap-4">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="font-body-lg text-sm text-on-surface">색약 지원 모드 (무늬 입히기)</p>
+                        <p class="text-xs text-on-surface-variant/60">블록에 식별용 패턴을 적용합니다.</p>
+                    </div>
+                    <input type="checkbox" id="toggle-colorblind" class="rounded text-primary focus:ring-primary bg-surface border-outline-variant">
+                </div>
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="font-body-lg text-sm text-on-surface">돌 장애물 난이도</p>
+                        <p class="text-xs text-on-surface-variant/60">돌 장애물의 체력(내구도)을 지정합니다.</p>
+                    </div>
+                    <select id="select-stone-hp" class="bg-surface border-outline-variant rounded text-xs text-on-surface focus:ring-primary">
+                        <option value="1">1 (쉬움)</option>
+                        <option value="2" selected>2 (보통)</option>
+                        <option value="3">3 (어려움)</option>
+                    </select>
+                </div>
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="font-body-lg text-sm text-on-surface">보드판 크기 (NxN)</p>
+                        <p class="text-xs text-on-surface-variant/60">퍼즐판의 격자 크기를 설정합니다.</p>
+                    </div>
+                    <select id="select-grid-size" class="bg-surface border-outline-variant rounded text-xs text-on-surface focus:ring-primary">
+                        <option value="8">8 x 8</option>
+                        <option value="10" selected>10 x 10</option>
+                        <option value="12">12 x 12</option>
+                    </select>
+                </div>
+                <button id="btn-reset-game" class="w-full bg-error-container hover:bg-error-container/80 text-on-error-container py-2 rounded-lg font-bold transition-colors">
+                    새 게임 시작 (재설정)
+                </button>
+            </div>
+            <hr class="border-outline-variant/30">
+            <button id="btn-close-settings" class="bg-surface-variant hover:bg-surface-variant/80 text-on-surface py-2 rounded-lg font-bold transition-colors">
+                닫기
+            </button>
+        </div>
+    </div>
+
+    <!-- Game Over Modal -->
+    <div id="modal-gameover" class="fixed inset-0 bg-black/85 backdrop-blur-md z-[100] hidden flex items-center justify-center p-md">
+        <div class="bg-surface-container rounded-xl w-full max-w-sm p-lg border border-outline/30 flex flex-col gap-md items-center text-center shadow-2xl">
+            <span class="material-symbols-outlined text-6xl text-error animate-bounce">skull</span>
+            <h2 class="font-headline-md text-error text-3xl font-black italic tracking-wider">GAME OVER</h2>
+            <p class="text-on-surface-variant text-sm mt-xs">더 이상 배치할 수 있는 블록이 없습니다!</p>
+            <div class="my-md bg-surface-dim/80 px-xl py-md rounded-xl border border-outline-variant/20 w-full">
+                <p class="text-xs text-on-surface-variant">최종 획득 점수</p>
+                <p id="gameover-final-score" class="font-headline-md text-4xl text-primary font-black">12,450</p>
+            </div>
+            <button id="btn-restart" class="w-full bg-primary hover:bg-primary-container text-on-primary font-bold py-3 rounded-lg text-lg transition-all active:scale-95 shadow-lg shadow-primary/20">
+                다시 시작하기
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // --- 1. GAME CONSTANTS & TEMPLATES ---
+        let GRID_SIZE = 10;
+        
+        // 블록 모양 (상대 좌표계 정의)
+        const BLOCK_TEMPLATES = [
+          // 1x1 Dot
+          { cells: [[0, 0]], color: 'primary', patternClass: 'pattern-dots', name: 'DOT', difficulty: 'easy' },
+          // 1x2 Line
+          { cells: [[0, 0], [0, 1]], color: 'primary', patternClass: 'pattern-stripes', name: 'LINE_2_H', difficulty: 'easy' },
+          { cells: [[0, 0], [1, 0]], color: 'primary', patternClass: 'pattern-stripes', name: 'LINE_2_V', difficulty: 'easy' },
+          // 1x3 Line
+          { cells: [[0, 0], [0, 1], [0, 2]], color: 'secondary', patternClass: 'pattern-stripes', name: 'LINE_3_H', difficulty: 'easy' },
+          { cells: [[0, 0], [1, 0], [2, 0]], color: 'secondary', patternClass: 'pattern-stripes', name: 'LINE_3_V', difficulty: 'easy' },
+          // 2x2 Square
+          { cells: [[0, 0], [0, 1], [1, 0], [1, 1]], color: 'tertiary', patternClass: 'pattern-grid', name: 'SQUARE_2', difficulty: 'normal' },
+          // L-shapes
+          { cells: [[0, 0], [1, 0], [2, 0], [2, 1]], color: 'primary', patternClass: 'pattern-dots', name: 'L_RIGHT', difficulty: 'hard' },
+          { cells: [[0, 0], [1, 0], [2, 0], [2, -1]], color: 'secondary', patternClass: 'pattern-stripes', name: 'L_LEFT', difficulty: 'hard' },
+          // T-shape
+          { cells: [[0, 0], [0, 1], [0, 2], [1, 1]], color: 'tertiary', patternClass: 'pattern-grid', name: 'T_SHAPE', difficulty: 'normal' }
+        ];
+
+        // --- 2. GAME STATE ---
+        let board = [];
+        let score = 0;
+        let combo = 0;
+        let slots = [null, null, null];
+        let settings = {
+            colorblind: false,
+            stoneHP: 2,
+            gridSize: 10
+        };
+
+        // UI 캐싱
+        const boardGridEl = document.getElementById('board-grid');
+        const scoreValEl = document.getElementById('score-val');
+        const comboDisplayEl = document.getElementById('combo-display');
+        const comboFloaterEl = document.getElementById('combo-floater');
+        const dragHelperEl = document.getElementById('drag-helper');
+        
+        const modalSettings = document.getElementById('modal-settings');
+        const modalGameOver = document.getElementById('modal-gameover');
+        
+        const toggleColorblind = document.getElementById('toggle-colorblind');
+        const selectStoneHP = document.getElementById('select-stone-hp');
+
+        // --- 3. INIT ENGINE ---
+        function initGame() {
+            score = 0;
+            combo = 0;
+            updateScoreUI();
+            
+            GRID_SIZE = settings.gridSize;
+
+            // 그리드 레이아웃 동적 반영
+            boardGridEl.style.gridTemplateColumns = `repeat(${GRID_SIZE}, minmax(0, 1fr))`;
+            boardGridEl.style.gridTemplateRows = `repeat(${GRID_SIZE}, minmax(0, 1fr))`;
+
+            // 그리드 라인 이미지 스케일 조정
+            const gridLineEl = document.querySelector('.grid-line');
+            if (gridLineEl) {
+                gridLineEl.style.backgroundSize = `${100 / GRID_SIZE}% ${100 / GRID_SIZE}%`;
+            }
+
+            // 보드 데이터 초기화
+            board = Array(GRID_SIZE).fill(null).map(() => 
+                Array(GRID_SIZE).fill(null).map(() => ({
+                    type: 'empty',
+                    color: null,
+                    health: 0,
+                    maxHealth: 0,
+                    patternClass: null
+                }))
+            );
+
+            // 임의의 위치에 돌 장애물 스폰 (기본 4개, 크기에 따라 보정)
+            spawnStones(4);
+            
+            // 슬롯에 블록 채우기
+            fillAllSlots();
+            
+            // 드로잉
+            renderBoard();
+            renderSlots();
+            
+            // 모달 닫기
+            modalGameOver.classList.add('hidden');
+            modalSettings.classList.add('hidden');
+        }
+
+        function spawnStones(count) {
+            // 보드판 크기에 맞추어 장애물 기본 수 조절
+            const finalCount = GRID_SIZE === 8 ? 2 : (GRID_SIZE === 12 ? 6 : count);
+            let spawned = 0;
+            while (spawned < finalCount) {
+                const r = Math.floor(Math.random() * (GRID_SIZE - 2)) + 1; // 너무 구석을 피함
+                const c = Math.floor(Math.random() * (GRID_SIZE - 2)) + 1;
+                if (board[r][c].type === 'empty') {
+                    board[r][c] = {
+                        type: 'stone',
+                        color: null,
+                        health: settings.stoneHP,
+                        maxHealth: settings.stoneHP,
+                        patternClass: null
+                    };
+                    spawned++;
+                }
+            }
+        }
+
+        // --- 4. RENDER PROCEDURES ---
+        function renderBoard() {
+            boardGridEl.innerHTML = '';
+            for (let r = 0; r < GRID_SIZE; r++) {
+                for (let c = 0; c < GRID_SIZE; c++) {
+                    const cell = board[r][c];
+                    const cellEl = document.createElement('div');
+                    cellEl.dataset.row = r;
+                    cellEl.dataset.col = c;
+                    
+                    // 기본 스타일
+                    cellEl.className = 'w-full h-full rounded-sm transition-all duration-200 relative ';
+                    
+                    if (cell.type === 'empty') {
+                        cellEl.classList.add('bg-white/[0.02]', 'border', 'border-white/[0.02]');
+                    } else if (cell.type === 'block') {
+                        // Tailwind 컬러 클래스 매핑
+                        const colorMap = {
+                            primary: 'bg-primary shadow-[0_0_8px_rgba(173,198,255,0.3)]',
+                            secondary: 'bg-secondary shadow-[0_0_8px_rgba(255,176,205,0.3)]',
+                            tertiary: 'bg-tertiary shadow-[0_0_8px_rgba(78,222,163,0.3)]'
+                        };
+                        cellEl.className += colorMap[cell.color] || 'bg-outline';
+                        
+                        // 색약 패턴 적용
+                        if (settings.colorblind && cell.patternClass) {
+                            cellEl.classList.add(cell.patternClass);
+                        }
+                    } else if (cell.type === 'stone') {
+                        cellEl.classList.add('stone-texture', 'border', 'border-outline-variant/60');
+                        
+                        // 돌 위에 깨진 균열을 표시하기 위해 내구도 대비 아이콘 표시
+                        const hpRatio = cell.health / cell.maxHealth;
+                        let icon = 'broken_image';
+                        if (hpRatio > 0.5) {
+                            icon = 'texture'; // 덜 깨진 상태
+                        }
+                        
+                        const innerHTML = `
+                            <div class="absolute inset-0 flex items-center justify-center opacity-40">
+                                <span class="material-symbols-outlined text-outline-variant text-[11px] font-bold">${icon}</span>
+                            </div>
+                            <div class="absolute bottom-[1px] right-[2px] text-[7px] font-label-mono text-outline-variant/80 select-none">${cell.health}</div>
+                        `;
+                        cellEl.innerHTML = innerHTML;
+                    }
+                    
+                    boardGridEl.appendChild(cellEl);
+                }
+            }
+        }
+
+        function renderSlots() {
+            for (let i = 0; i < 3; i++) {
+                const slotEl = document.querySelector(`.slot-container[data-slot="${i}"]`);
+                slotEl.innerHTML = '';
+                
+                const block = slots[i];
+                if (!block) {
+                    // 비어있는 슬롯
+                    slotEl.innerHTML = '<span class="material-symbols-outlined text-white/10 text-2xl select-none">block</span>';
+                    continue;
+                }
+
+                // 블록 모양 미니 그리드로 시각화
+                // 슬롯 내부의 크기를 알기 위해 최대 바운딩 박스를 계산
+                let minR = 99, maxR = -99, minC = 99, maxC = -99;
+                block.cells.forEach(([r, c]) => {
+                    if (r < minR) minR = r;
+                    if (r > maxR) maxR = r;
+                    if (c < minC) minC = c;
+                    if (c > maxC) maxC = c;
+                });
+                
+                const rows = maxR - minR + 1;
+                const cols = maxC - minC + 1;
+                
+                const gridContainer = document.createElement('div');
+                gridContainer.className = `grid gap-[2px] pointer-events-none`;
+                gridContainer.style.gridTemplateRows = `repeat(${rows}, minmax(0, 1fr))`;
+                gridContainer.style.gridTemplateColumns = `repeat(${cols}, minmax(0, 1fr))`;
+                
+                // 임시 셀 위치 사전 구축
+                const cellSet = new Set(block.cells.map(([r, c]) => `${r - minR},${c - minC}`));
+                
+                // 미니 블록 그리기
+                for (let r = 0; r < rows; r++) {
+                    for (let c = 0; c < cols; c++) {
+                        const cellEl = document.createElement('div');
+                        const cellSize = block.cells.length > 3 ? 'w-4 h-4' : 'w-5 h-5';
+                        cellEl.className = `${cellSize} rounded-sm transition-all`;
+                        
+                        if (cellSet.has(`${r},${c}`)) {
+                            const colorMap = {
+                                primary: 'bg-primary shadow-sm',
+                                secondary: 'bg-secondary shadow-sm',
+                                tertiary: 'bg-tertiary shadow-sm'
+                            };
+                            cellEl.className += ' ' + colorMap[block.color];
+                            
+                            // 색약 패턴
+                            if (settings.colorblind && block.patternClass) {
+                                cellEl.classList.add(block.patternClass);
+                            }
+                        } else {
+                            cellEl.classList.add('invisible');
+                        }
+                        gridContainer.appendChild(cellEl);
+                    }
+                }
+                
+                slotEl.appendChild(gridContainer);
+            }
+        }
+
+        function fillAllSlots() {
+            for (let i = 0; i < 3; i++) {
+                if (slots[i] === null) {
+                    slots[i] = getRandomBlockBasedOnScore();
+                }
+            }
+        }
+
+        // 점수대에 따른 동적 가중치 난이도 조절 함수 (DDA)
+        function getRandomBlockBasedOnScore() {
+            let weights = { easy: 0.70, normal: 0.25, hard: 0.05 }; // 0~499점 (쉬움 중심)
+
+            if (score >= 500 && score < 1500) {
+                weights = { easy: 0.35, normal: 0.45, hard: 0.20 }; // 500~1499점 (중간)
+            } else if (score >= 1500) {
+                weights = { easy: 0.15, normal: 0.35, hard: 0.50 }; // 1500점 이상 (어려움 중심)
+            }
+
+            // 난이도별 템플릿 그룹화
+            const categorized = {
+                easy: BLOCK_TEMPLATES.filter(b => b.difficulty === 'easy'),
+                normal: BLOCK_TEMPLATES.filter(b => b.difficulty === 'normal'),
+                hard: BLOCK_TEMPLATES.filter(b => b.difficulty === 'hard')
+            };
+
+            const rand = Math.random();
+            let selectedDiff = 'easy';
+
+            if (rand < weights.easy) {
+                selectedDiff = 'easy';
+            } else if (rand < weights.easy + weights.normal) {
+                selectedDiff = 'normal';
+            } else {
+                selectedDiff = 'hard';
+            }
+
+            // 안전장치 폴백 처리
+            const pool = categorized[selectedDiff].length > 0 ? categorized[selectedDiff] : BLOCK_TEMPLATES;
+            const rndIdx = Math.floor(Math.random() * pool.length);
+            
+            return JSON.parse(JSON.stringify(pool[rndIdx]));
+        }
+
+        // --- 5. DRAG & DROP INTERACTION SYSTEM ---
+        let activeDragIndex = null;
+        let dragOffset = { x: 0, y: -65 }; // 손가락 안 가리도록 위로 오프셋
+        let touchStartPos = { x: 0, y: 0 };
+        let cellCenters = []; // 보드 내 셀들의 화면 상 중심 좌표 캐싱
+        
+        function setupDragEvents() {
+            const slotContainers = document.querySelectorAll('.slot-container');
+            
+            slotContainers.forEach((container) => {
+                // 터치 이벤트
+                container.addEventListener('touchstart', (e) => handleDragStart(e, container), { passive: false });
+                // 마우스 이벤트
+                container.addEventListener('mousedown', (e) => handleDragStart(e, container));
+            });
+
+            window.addEventListener('touchmove', handleDragMove, { passive: false });
+            window.addEventListener('mousemove', handleDragMove);
+
+            window.addEventListener('touchend', handleDragEnd);
+            window.addEventListener('mouseup', handleDragEnd);
+        }
+
+        // 보드 내 각 셀의 실시간 중심 좌표 캐싱
+        function cacheCellCenters() {
+            cellCenters = [];
+            const cellElements = boardGridEl.querySelectorAll('[data-row]');
+            cellElements.forEach(el => {
+                const rect = el.getBoundingClientRect();
+                cellCenters.push({
+                    row: parseInt(el.dataset.row),
+                    col: parseInt(el.dataset.col),
+                    x: rect.left + rect.width / 2,
+                    y: rect.top + rect.height / 2,
+                    width: rect.width,
+                    height: rect.height
+                });
+            });
+        }
+
+        function handleDragStart(e, container) {
+            const index = parseInt(container.dataset.slot);
+            if (slots[index] === null) return;
+            
+            // 빙결 쿨타임 등의 경우 체크 (Phase 1 에서는 모두 가능)
+            
+            e.preventDefault(); // 기본 터치 홀드 줌/스크롤 제어 방지
+            
+            activeDragIndex = index;
+            
+            const eventClientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const eventClientY = e.touches ? e.touches[0].clientY : e.clientY;
+            
+            touchStartPos.x = eventClientX;
+            touchStartPos.y = eventClientY;
+            
+            // 햅틱 진동
+            if ('vibrate' in navigator) navigator.vibrate(10);
+            
+            // 보드 각 셀의 위치 캐싱
+            cacheCellCenters();
+            
+            // 드래그 헬퍼 준비
+            renderDragHelper(slots[index], eventClientX, eventClientY);
+            container.classList.add('opacity-30');
+        }
+
+        function renderDragHelper(block, x, y) {
+            dragHelperEl.innerHTML = '';
+            
+            let minR = 99, maxR = -99, minC = 99, maxC = -99;
+            block.cells.forEach(([r, c]) => {
+                if (r < minR) minR = r;
+                if (r > maxR) maxR = r;
+                if (c < minC) minC = c;
+                if (c > maxC) maxC = c;
+            });
+            
+            const rows = maxR - minR + 1;
+            const cols = maxC - minC + 1;
+            
+            const helperGrid = document.createElement('div');
+            helperGrid.className = 'grid gap-[3px] p-2 bg-white/5 rounded-lg border border-white/10 backdrop-blur-md shadow-2xl';
+            helperGrid.style.gridTemplateRows = `repeat(${rows}, minmax(0, 1fr))`;
+            helperGrid.style.gridTemplateColumns = `repeat(${cols}, minmax(0, 1fr))`;
+            
+            const cellSet = new Set(block.cells.map(([r, c]) => `${r - minR},${c - minC}`));
+            
+            for (let r = 0; r < rows; r++) {
+                for (let c = 0; c < cols; c++) {
+                    const cellEl = document.createElement('div');
+                    cellEl.className = 'w-8 h-8 rounded-sm';
+                    
+                    if (cellSet.has(`${r},${c}`)) {
+                        const colorMap = {
+                            primary: 'bg-primary shadow-lg',
+                            secondary: 'bg-secondary shadow-lg',
+                            tertiary: 'bg-tertiary shadow-lg'
+                        };
+                        cellEl.className += ' ' + colorMap[block.color];
+                        if (settings.colorblind && block.patternClass) {
+                            cellEl.classList.add(block.patternClass);
+                        }
+                    } else {
+                        cellEl.classList.add('invisible');
+                    }
+                    helperGrid.appendChild(cellEl);
+                }
+            }
+            
+            dragHelperEl.appendChild(helperGrid);
+            dragHelperEl.classList.remove('hidden');
+            
+            // 앵커 보정 (가운데 기준)
+            const rect = dragHelperEl.getBoundingClientRect();
+            updateDragHelperPos(x, y);
+        }
+
+        function updateDragHelperPos(x, y) {
+            if (activeDragIndex === null) return;
+            
+            // 손가락 위로 오프셋(offset) 주어 보정
+            const finalX = x - (dragHelperEl.offsetWidth / 2);
+            const finalY = y + dragOffset.y - (dragHelperEl.offsetHeight / 2);
+            
+            dragHelperEl.style.transform = `translate3d(${finalX}px, ${finalY}px, 0)`;
+        }
+
+        function handleDragMove(e) {
+            if (activeDragIndex === null) return;
+            if (e.cancelable) e.preventDefault(); // 스크롤 차단
+            
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            
+            updateDragHelperPos(clientX, clientY);
+            
+            // 자석 효과(Snap-to-Grid)를 적용한 대상 셀 계산
+            const block = slots[activeDragIndex];
+            const targetCell = getClosestValidCell(clientX, clientY + dragOffset.y, block);
+            clearPreviewHighlights();
+            
+            if (targetCell) {
+                drawPreviewHighlight(targetCell.row, targetCell.col, block);
+            }
+        }
+
+        function handleDragEnd(e) {
+            if (activeDragIndex === null) return;
+            
+            const clientX = e.changedTouches ? e.changedTouches[0].clientX : e.clientX;
+            const clientY = e.changedTouches ? e.changedTouches[0].clientY : e.clientY;
+            
+            const block = slots[activeDragIndex];
+            const targetCell = getClosestValidCell(clientX, clientY + dragOffset.y, block);
+            
+            let placed = false;
+            
+            if (targetCell) {
+                placeBlock(targetCell.row, targetCell.col, block);
+                placed = true;
+            }
+            
+            // 초기화
+            dragHelperEl.classList.add('hidden');
+            const slotContainer = document.querySelector(`.slot-container[data-slot="${activeDragIndex}"]`);
+            if (slotContainer) slotContainer.classList.remove('opacity-30');
+            
+            clearPreviewHighlights();
+            
+            if (placed) {
+                slots[activeDragIndex] = null;
+                // 세 슬롯 다 썼는지 확인
+                if (slots.every(s => s === null)) {
+                    fillAllSlots();
+                }
+                
+                // 줄 확인 & 돌 데미지
+                processLinesAndScores();
+                
+                // 렌더 갱신
+                renderBoard();
+                renderSlots();
+                
+                // 게임 오버 여부 판단
+                checkGameOver();
+            }
+            
+            activeDragIndex = null;
+        }
+
+        // --- 6. GAME LOGIC ALGORITHMS ---
+        
+        // 드래그 좌표 근처에서 가장 가깝고 배치가 유효한 셀 찾기 (자석 스냅 효과)
+        function getClosestValidCell(x, y, block) {
+            if (cellCenters.length === 0) return null;
+            
+            // 1. 모든 셀과의 거리 계산
+            const list = cellCenters.map(cell => {
+                const dx = cell.x - x;
+                const dy = cell.y - y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                return { cell, dist };
+            });
+            
+            // 2. 거리 순으로 정렬
+            list.sort((a, b) => a.dist - b.dist);
+            
+            // 3. 가장 가까운 셀부터 배치 유효성 검사 (스냅 반경 제한: 약 3.5칸 이내 거리인 120px)
+            const maxSnapDistance = 120;
+            
+            for (let item of list) {
+                if (item.dist > maxSnapDistance) break;
+                
+                if (isValidPlacement(item.cell.row, item.cell.col, block)) {
+                    return {
+                        row: item.cell.row,
+                        col: item.cell.col
+                    };
+                }
+            }
+            return null;
+        }
+
+        function isValidPlacement(startRow, startCol, block) {
+            // 기준점 정렬용 오프셋 보정 (첫번째 셀을 기준 0,0으로 설정)
+            const baseR = block.cells[0][0];
+            const baseC = block.cells[0][1];
+
+            for (const [r, c] of block.cells) {
+                const targetR = startRow + (r - baseR);
+                const targetC = startCol + (c - baseC);
+                
+                if (targetR < 0 || targetR >= GRID_SIZE || targetC < 0 || targetC >= GRID_SIZE) {
+                    return false;
+                }
+                if (board[targetR][targetC].type !== 'empty') {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        function drawPreviewHighlight(startRow, startCol, block) {
+            const baseR = block.cells[0][0];
+            const baseC = block.cells[0][1];
+            
+            block.cells.forEach(([r, c]) => {
+                const targetR = startRow + (r - baseR);
+                const targetC = startCol + (c - baseC);
+                
+                const cellEl = boardGridEl.querySelector(`[data-row="${targetR}"][data-col="${targetC}"]`);
+                if (cellEl) {
+                    // 흐릿한 배치 미리보기 스타일 적용
+                    const colors = {
+                        primary: 'bg-primary/40 border border-primary/60 scale-95 shadow-[0_0_10px_#adc6ff]',
+                        secondary: 'bg-secondary/40 border border-secondary/60 scale-95 shadow-[0_0_10px_#ffb0cd]',
+                        tertiary: 'bg-tertiary/40 border border-tertiary/60 scale-95 shadow-[0_0_10px_#4edea3]'
+                    };
+                    cellEl.className += ' ' + colors[block.color];
+                }
+            });
+        }
+
+        function clearPreviewHighlights() {
+            // 보드 렌더링 갱신하지 않고 하이라이트 클래스만 제거
+            const cells = boardGridEl.querySelectorAll('[data-row]');
+            cells.forEach(cellEl => {
+                const r = parseInt(cellEl.dataset.row);
+                const c = parseInt(cellEl.dataset.col);
+                const cell = board[r][c];
+                
+                if (cell.type === 'empty') {
+                    cellEl.className = 'w-full h-full rounded-sm transition-all duration-200 relative bg-white/[0.02] border border-white/[0.02]';
+                }
+            });
+        }
+
+        function placeBlock(startRow, startCol, block) {
+            const baseR = block.cells[0][0];
+            const baseC = block.cells[0][1];
+            
+            block.cells.forEach(([r, c]) => {
+                const targetR = startRow + (r - baseR);
+                const targetC = startCol + (c - baseC);
+                
+                board[targetR][targetC] = {
+                    type: 'block',
+                    color: block.color,
+                    health: 0,
+                    maxHealth: 0,
+                    patternClass: block.patternClass
+                };
+            });
+            
+            // 단순 배치 시 10점 획득
+            score += block.cells.length * 5;
+            updateScoreUI();
+        }
+
+        // 라인 클리어 로직
+        function processLinesAndScores() {
+            let rowsToClear = [];
+            let colsToClear = [];
+            
+            // 1. 가로 가득 찬 라인 검사
+            for (let r = 0; r < GRID_SIZE; r++) {
+                if (board[r].every(cell => cell.type !== 'empty')) {
+                    rowsToClear.push(r);
+                }
+            }
+            
+            // 2. 세로 가득 찬 라인 검사
+            for (let c = 0; c < GRID_SIZE; c++) {
+                let isFull = true;
+                for (let r = 0; r < GRID_SIZE; r++) {
+                    if (board[r][c].type === 'empty') {
+                        isFull = false;
+                        break;
+                    }
+                }
+                if (isFull) {
+                    colsToClear.push(c);
+                }
+            }
+            
+            const totalLines = rowsToClear.length + colsToClear.length;
+            
+            if (totalLines > 0) {
+                combo++;
+                // 점수 계산: (줄 수 * 100) * 콤보 가중치
+                const points = (totalLines * 100) * combo;
+                score += points;
+                
+                // 콤보 플로팅 UI 띄우기
+                triggerComboFloatingEffect(combo);
+                
+                // 돌 충격 및 제거 처리
+                const targetCells = new Set();
+                rowsToClear.forEach(r => {
+                    for (let c = 0; c < GRID_SIZE; c++) targetCells.add(`${r},${c}`);
+                });
+                colsToClear.forEach(c => {
+                    for (let r = 0; r < GRID_SIZE; r++) targetCells.add(`${r},${c}`);
+                });
+                
+                targetCells.forEach(coord => {
+                    const [r, c] = coord.split(',').map(Number);
+                    const cell = board[r][c];
+                    
+                    if (cell.type === 'stone') {
+                        cell.health -= 1;
+                        if (cell.health <= 0) {
+                            board[r][c] = createEmptyCell();
+                            // 돌 완전 제거 시 50점 보너스
+                            score += 50;
+                        }
+                    } else if (cell.type === 'block') {
+                        board[r][c] = createEmptyCell();
+                    }
+                });
+                
+                // 타격감 진동 효과
+                if ('vibrate' in navigator) navigator.vibrate([30, 20, 30]);
+            } else {
+                combo = 0;
+            }
+            
+            updateScoreUI();
+        }
+
+        function createEmptyCell() {
+            return {
+                type: 'empty',
+                color: null,
+                health: 0,
+                maxHealth: 0,
+                patternClass: null
+            };
+        }
+
+        function updateScoreUI() {
+            scoreValEl.innerText = score.toLocaleString();
+            
+            if (combo > 0) {
+                comboDisplayEl.innerText = `COMBO x${combo}`;
+                comboDisplayEl.classList.remove('invisible');
+            } else {
+                comboDisplayEl.classList.add('invisible');
+            }
+        }
+
+        function triggerComboFloatingEffect(comboVal) {
+            comboFloaterEl.innerHTML = `<span class="font-display-lg text-tertiary italic drop-shadow-[0_0_12px_#4edea3] text-4xl animate-[float-up_1.2s_ease-out_forwards]">COMBO x${comboVal}</span>`;
+            comboFloaterEl.classList.remove('hidden');
+            
+            // 일정시간 후 제거
+            setTimeout(() => {
+                comboFloaterEl.classList.add('hidden');
+            }, 1200);
+            
+            // 파티클 방출
+            for (let i = 0; i < 15; i++) {
+                setTimeout(createAttackParticle, i * 40);
+            }
+        }
+
+        function checkGameOver() {
+            // 현재 슬롯에 남은 블록 중 하나라도 배치할 수 있는 자리가 있는지 검사
+            let playable = false;
+            
+            const activeSlots = slots.filter(s => s !== null);
+            if (activeSlots.length === 0) return; // 배치할 수 있는 블록 없음 (슬롯 충전 직전)
+            
+            for (let block of activeSlots) {
+                for (let r = 0; r < GRID_SIZE; r++) {
+                    for (let c = 0; c < GRID_SIZE; c++) {
+                        if (isValidPlacement(r, c, block)) {
+                            playable = true;
+                            break;
+                        }
+                    }
+                    if (playable) break;
+                }
+                if (playable) break;
+            }
+            
+            if (!playable) {
+                // 게임 오버!
+                document.getElementById('gameover-final-score').innerText = score.toLocaleString();
+                modalGameOver.classList.remove('hidden');
+                
+                if ('vibrate' in navigator) navigator.vibrate([100, 50, 100, 50, 300]);
+            }
+        }
+
+        // --- 7. PARTICLE SYSTEM ---
+        function createAttackParticle() {
+            const container = document.querySelector('.particle-emitter');
+            if (!container) return;
+            
+            const colors = ['#adc6ff', '#ffb0cd', '#4edea3'];
+            const p = document.createElement('div');
+            const size = Math.random() * 8 + 3;
+            const x = (Math.random() - 0.5) * 200; // 넓은 스프레드
+            const y = -180 - Math.random() * 150;
+            const color = colors[Math.floor(Math.random() * colors.length)];
+            
+            p.className = 'absolute w-1 h-1 rounded-full pointer-events-none opacity-0';
+            p.style.backgroundColor = color;
+            p.style.width = `${size}px`;
+            p.style.height = `${size}px`;
+            p.style.left = '50%';
+            p.style.bottom = '10px';
+            p.style.setProperty('--tw-translate-x', `${x}px`);
+            p.style.setProperty('--tw-translate-y', `${y}px`);
+            p.style.animation = `particle-trail ${0.6 + Math.random() * 0.6}s ease-out forwards`;
+            
+            container.appendChild(p);
+            setTimeout(() => p.remove(), 1200);
+        }
+
+        // --- 8. SETTINGS & MODALS BINDING ---
+        function setupSettingsEvents() {
+            const selectGridSize = document.getElementById('select-grid-size');
+
+            document.getElementById('btn-settings').addEventListener('click', () => {
+                // 현재 설정 값 반영
+                toggleColorblind.checked = settings.colorblind;
+                selectStoneHP.value = settings.stoneHP;
+                selectGridSize.value = settings.gridSize;
+                
+                modalSettings.classList.remove('hidden');
+            });
+            
+            document.getElementById('btn-close-settings').addEventListener('click', () => {
+                modalSettings.classList.add('hidden');
+            });
+            
+            document.getElementById('btn-reset-game').addEventListener('click', () => {
+                settings.colorblind = toggleColorblind.checked;
+                settings.stoneHP = parseInt(selectStoneHP.value);
+                settings.gridSize = parseInt(selectGridSize.value);
+                initGame();
+            });
+            
+            document.getElementById('btn-restart').addEventListener('click', () => {
+                initGame();
+            });
+            
+            // 색약 렌더링 동적 체크
+            toggleColorblind.addEventListener('change', (e) => {
+                settings.colorblind = e.target.checked;
+                renderBoard();
+                renderSlots();
+            });
+
+            // 설정 바깥 영역 누르면 닫기
+            modalSettings.addEventListener('click', (e) => {
+                if (e.target === modalSettings) {
+                    modalSettings.classList.add('hidden');
+                }
+            });
+        }
+
+        // --- 9. APP START ---
+        window.addEventListener('DOMContentLoaded', () => {
+            initGame();
+            setupDragEvents();
+            setupSettingsEvents();
+        });
+    </script>
+</body>
+
+</html>

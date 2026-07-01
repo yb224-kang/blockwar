@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html class="dark" lang="en" style="">
+
+<head>
+    <meta charset="utf-8">
+    <meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport">
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Anybody:ital,wght@0,400..900;1,400..900&amp;family=Rubik:wght@300..900&amp;family=JetBrains+Mono:wght@100..800&amp;display=swap"
+        rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+        rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+        rel="stylesheet">
+    <style>
+        @keyframes pulse-glow {
+
+            0%,
+            100% {
+                box-shadow: 0 0 10px rgba(173, 198, 255, 0.2);
+            }
+
+            50% {
+                box-shadow: 0 0 25px rgba(173, 198, 255, 0.5);
+            }
+        }
+
+        @keyframes attack-pulse {
+
+            0%,
+            100% {
+                border-color: rgba(255, 180, 171, 0.4);
+                box-shadow: inset 0 0 15px rgba(147, 0, 10, 0.5);
+            }
+
+            50% {
+                border-color: rgba(255, 180, 171, 1);
+                box-shadow: inset 0 0 30px rgba(147, 0, 10, 0.8);
+            }
+        }
+
+        @keyframes float-up {
+            0% {
+                transform: translateY(0);
+                opacity: 0;
+            }
+
+            20% {
+                opacity: 1;
+            }
+
+            100% {
+                transform: translateY(-40px);
+                opacity: 0;
+            }
+        }
+
+        @keyframes particle-trail {
+            0% {
+                transform: translate(0, 0) scale(1);
+                opacity: 1;
+            }
+
+            100% {
+                transform: translate(var(--tw-translate-x), var(--tw-translate-y)) scale(0);
+                opacity: 0;
+            }
+        }
+
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .ice-freeze {
+            background: linear-gradient(135deg, rgba(165, 243, 252, 0.4) 0%, rgba(255, 255, 255, 0.2) 100%);
+            backdrop-filter: blur(4px);
+        }
+
+        .stone-texture {
+            background-color: #424754;
+            background-image: repeating-linear-gradient(45deg, transparent, transparent 5px, rgba(0, 0, 0, 0.1) 5px, rgba(0, 0, 0, 0.1) 10px);
+        }
+
+        .grid-line {
+            background-image: linear-gradient(to right, rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+            background-size: 12.5% 12.5%;
+        }
+    </style>
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-primary": "#002e6a",
+                        "on-secondary": "#640039",
+                        "on-surface-variant": "#c2c6d6",
+                        "on-secondary-fixed-variant": "#8c0053",
+                        "surface-tint": "#adc6ff",
+                        "secondary-fixed-dim": "#ffb0cd",
+                        "on-surface": "#dae2fd",
+                        "tertiary-container": "#00a572",
+                        "secondary-fixed": "#ffd9e4",
+                        "on-error-container": "#ffdad6",
+                        "surface-dim": "#0b1326",
+                        "on-secondary-fixed": "#3e0022",
+                        "surface-container-lowest": "#060e20",
+                        "outline-variant": "#424754",
+                        "tertiary-fixed-dim": "#4edea3",
+                        "error-container": "#93000a",
+                        "on-error": "#690005",
+                        "background": "#0b1326",
+                        "on-tertiary-fixed-variant": "#005236",
+                        "on-tertiary-container": "#00311f",
+                        "tertiary": "#4edea3",
+                        "surface-container": "#171f33",
+                        "outline": "#8c909f",
+                        "secondary-container": "#aa0266",
+                        "surface-variant": "#2d3449",
+                        "on-tertiary-fixed": "#002113",
+                        "surface": "#0b1326",
+                        "primary-fixed": "#d8e2ff",
+                        "surface-bright": "#31394d",
+                        "on-primary-fixed": "#001a42",
+                        "primary-container": "#4d8eff",
+                        "inverse-surface": "#dae2fd",
+                        "inverse-on-surface": "#283044",
+                        "primary-fixed-dim": "#adc6ff",
+                        "primary": "#adc6ff",
+                        "on-secondary-container": "#ffbad3",
+                        "on-primary-fixed-variant": "#004395",
+                        "on-tertiary": "#003824",
+                        "error": "#ffb4ab",
+                        "surface-container-low": "#131b2e",
+                        "inverse-primary": "#005ac2",
+                        "on-primary-container": "#00285d",
+                        "surface-container-high": "#222a3d",
+                        "tertiary-fixed": "#6ffbbe",
+                        "on-background": "#dae2fd",
+                        "surface-container-highest": "#2d3449",
+                        "secondary": "#ffb0cd"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "sm": "8px",
+                        "xs": "4px",
+                        "unit": "4px",
+                        "md": "16px",
+                        "lg": "24px",
+                        "safe-area-inset": "16px",
+                        "board-gutter": "2px",
+                        "xl": "32px"
+                    },
+                    "fontFamily": {
+                        "headline-md": ["Anybody"],
+                        "body-sm": ["Rubik"],
+                        "display-lg": ["Anybody"],
+                        "body-lg": ["Rubik"],
+                        "label-mono": ["JetBrains Mono"],
+                        "display-lg-mobile": ["Anybody"]
+                    },
+                    "fontSize": {
+                        "headline-md": ["24px", { "lineHeight": "32px", "fontWeight": "700" }],
+                        "body-sm": ["14px", { "lineHeight": "20px", "fontWeight": "400" }],
+                        "display-lg": ["48px", { "lineHeight": "52px", "letterSpacing": "-0.02em", "fontWeight": "800" }],
+                        "body-lg": ["18px", { "lineHeight": "26px", "fontWeight": "400" }],
+                        "label-mono": ["12px", { "lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "500" }],
+                        "display-lg-mobile": ["36px", { "lineHeight": "40px", "fontWeight": "800" }]
+                    }
+                },
+            },
+        }
+    </script>
+</head>
+
+<body class="bg-background text-on-background font-body-sm overflow-hidden h-screen w-screen flex flex-col">
+    <!-- Top Navigation Shell (Injected Style Mapping) -->
+    <header
+        class="fixed top-0 w-full z-50 flex justify-between items-center px-md h-16 bg-surface/80 backdrop-blur-xl border-b border-outline-variant/30">
+        <div class="flex items-center gap-2">
+            <span
+                class="material-symbols-outlined text-primary hover:bg-white/10 p-2 rounded-lg transition-all active:scale-95">menu</span>
+            <h1 class="font-headline-md text-headline-md-mobile italic font-black text-primary tracking-tighter">BATTLE
+                BLAST</h1>
+        </div>
+        <div class="flex items-center gap-4">
+            <div class="text-right">
+                <p class="font-label-mono text-label-mono text-on-surface-variant uppercase">Player 1</p>
+                <p class="font-headline-md text-headline-md-mobile text-primary leading-none">12,450</p>
+            </div>
+            <span
+                class="material-symbols-outlined text-primary hover:bg-white/10 p-2 rounded-lg transition-all active:scale-95">settings</span>
+        </div>
+    </header>
+    <!-- Main Game Canvas -->
+    <main class="flex-grow pt-16 pb-20 relative flex flex-col items-center justify-between">
+        <!-- Background Animation -->
+
+        <!-- TOP AREA (30%): Opponent Mini-Board -->
+        <section class="w-full h-[28%] flex flex-col items-center justify-center px-lg mt-sm">
+            <div
+                class="relative w-40 aspect-square border-2 border-error/50 rounded-lg overflow-hidden animate-[attack-pulse_2s_infinite] bg-surface-dim">
+                <!-- Opponent Grid -->
+                <div class="absolute inset-0 grid-line" style="background-size: 10% 10%;"></div>
+                <div class="absolute inset-1 grid grid-cols-10 grid-rows-10 gap-[1px]">
+                    <!-- Sample Opponent Blocks (repositioned for 10x10) -->
+                    <div class="col-start-2 row-start-2 bg-secondary rounded-[1px] opacity-70"></div>
+                    <div class="col-start-3 row-start-2 bg-secondary rounded-[1px] opacity-70"></div>
+                    <div class="col-start-4 row-start-2 bg-secondary rounded-[1px] opacity-70"></div>
+                    <div class="col-start-9 row-start-6 bg-tertiary rounded-[1px] opacity-70"></div>
+                    <div class="col-start-9 row-start-7 bg-tertiary rounded-[1px] opacity-70"></div>
+                    <div class="col-start-2 row-start-9 bg-primary rounded-[1px] opacity-70"></div>
+                </div>
+                <!-- Status Overlay -->
+                <div class="absolute bottom-0 left-0 right-0 bg-error/90 py-xs">
+                    <p class="text-center text-[10px] font-bold text-on-error uppercase tracking-widest">Under Attack
+                    </p>
+                </div>
+            </div>
+            <div class="mt-xs flex items-center gap-sm">
+                <span class="font-label-mono text-label-mono text-on-surface-variant">OPPONENT: KYLE_REXX</span>
+                <div class="h-1 w-24 bg-surface-variant rounded-full overflow-hidden">
+                    <div class="h-full bg-error w-3/4"></div>
+                </div>
+            </div>
+        </section>
+        <!-- MIDDLE AREA (42%): Player Main Board -->
+        <div class="w-full px-lg mb-sm flex flex-col gap-xs">
+            <div class="flex justify-between items-end px-1 mb-1"><span
+                    class="font-label-mono text-[10px] text-primary tracking-widest uppercase">Time
+                    Remaining</span><span
+                    class="font-label-mono text-label-mono text-secondary animate-pulse">15.0s</span></div>
+            <div
+                class="h-3 w-full bg-surface-container-highest/30 rounded-full overflow-hidden border border-outline-variant/30 relative shadow-[0_0_15px_rgba(0,0,0,0.5)]">
+                <div
+                    class="absolute inset-0 bg-gradient-to-r from-primary via-secondary to-primary opacity-20 animate-pulse">
+                </div>
+                <div
+                    class="h-full bg-gradient-to-r from-primary to-secondary w-3/4 shadow-[0_0_15px_rgba(173,198,255,0.6)] transition-all duration-1000 relative">
+                    <div class="absolute top-0 right-0 h-full w-1 bg-white shadow-[0_0_10px_#fff]"></div>
+                </div>
+            </div>
+        </div>
+        <section class="relative w-full h-[42%] flex items-center justify-center px-sm">
+            <div
+                class="relative w-[340px] max-w-full aspect-square glass-panel rounded-xl p-unit shadow-2xl overflow-hidden">
+                <!-- Main Grid Lines -->
+                <div class="absolute inset-0 grid-line opacity-20" style="background-size: 10% 10%;"></div>
+                <!-- Actual Grid -->
+                <div class="relative w-full h-full grid grid-cols-10 grid-rows-10 gap-unit p-unit">
+                    <!-- Player Blocks (repositioned for 10x10) -->
+                    <div class="col-start-4 row-start-4 bg-primary rounded-sm shadow-[0_0_10px_rgba(173,198,255,0.4)]">
+                    </div>
+                    <div class="col-start-4 row-start-5 bg-primary rounded-sm shadow-[0_0_10px_rgba(173,198,255,0.4)]">
+                    </div>
+                    <div class="col-start-5 row-start-5 bg-primary rounded-sm shadow-[0_0_10px_rgba(173,198,255,0.4)]">
+                    </div>
+                    <div
+                        class="col-start-6 row-start-8 bg-secondary rounded-sm shadow-[0_0_10px_rgba(255,176,205,0.4)]">
+                    </div>
+                    <div
+                        class="col-start-7 row-start-8 bg-secondary rounded-sm shadow-[0_0_10px_rgba(255,176,205,0.4)]">
+                    </div>
+                    <!-- Stone Block Obstacle -->
+                    <div
+                        class="col-start-1 row-start-10 stone-texture border border-outline-variant/50 rounded-sm relative group">
+                        <div class="absolute inset-0 flex items-center justify-center">
+                            <span class="material-symbols-outlined text-outline-variant text-[10px]">broken_image</span>
+                        </div>
+                    </div>
+                    <div class="col-start-9 row-start-3 bg-tertiary rounded-sm shadow-[0_0_10px_rgba(78,222,163,0.4)]">
+                    </div>
+                    <div class="col-start-9 row-start-4 bg-tertiary rounded-sm shadow-[0_0_10px_rgba(78,222,163,0.4)]">
+                    </div>
+                    <div class="col-start-9 row-start-5 bg-tertiary rounded-sm shadow-[0_0_10px_rgba(78,222,163,0.4)]">
+                    </div>
+                </div>
+                <!-- Combo Multiplier Floating UI -->
+                <div class="absolute right-4 top-4 flex flex-col items-center animate-[float-up_1.5s_infinite]">
+                    <span class="font-display-lg-mobile text-tertiary italic drop-shadow-[0_0_8px_#4edea3]">COMBO
+                        x3</span>
+                </div>
+            </div>
+            <!-- Attack Particles Trail (Abstract Representation) -->
+            <div class="absolute inset-x-0 bottom-full h-32 pointer-events-none flex justify-center">
+                <div class="particle-emitter flex gap-2">
+                    <div class="w-2 h-2 rounded-full bg-primary animate-[particle-trail_0.8s_ease-out_infinite]"
+                        style="--tw-translate-x: -20px; --tw-translate-y: -150px;"></div>
+                    <div class="w-1 h-1 rounded-full bg-tertiary animate-[particle-trail_0.6s_ease-out_infinite]"
+                        style="--tw-translate-x: 10px; --tw-translate-y: -180px;"></div>
+                    <div class="w-3 h-3 rounded-full bg-secondary animate-[particle-trail_1s_ease-out_infinite]"
+                        style="--tw-translate-x: 40px; --tw-translate-y: -120px;"></div>
+                    <div class="absolute w-1 h-1 rounded-full pointer-events-none opacity-0"
+                        style="background-color: rgb(78, 222, 163); width: 6.05715px; height: 6.05715px; left: 50%; --tw-translate-x: -27.231107056712094px; --tw-translate-y: -199.33539481883025px; animation: 0.898314s ease-out 0s 1 normal forwards running particle-trail;">
+                    </div>
+                    <div class="absolute w-1 h-1 rounded-full pointer-events-none opacity-0"
+                        style="background-color: rgb(78, 222, 163); width: 6.00157px; height: 6.00157px; left: 50%; --tw-translate-x: 29.62362549938668px; --tw-translate-y: -248.66100898551105px; animation: 0.926129s ease-out 0s 1 normal forwards running particle-trail;">
+                    </div>
+                    <div class="absolute w-1 h-1 rounded-full pointer-events-none opacity-0"
+                        style="background-color: rgb(173, 198, 255); width: 5.97041px; height: 5.97041px; left: 50%; --tw-translate-x: -20.124256774067526px; --tw-translate-y: -167.38189067448104px; animation: 0.853355s ease-out 0s 1 normal forwards running particle-trail;">
+                    </div>
+                    <div class="absolute w-1 h-1 rounded-full pointer-events-none opacity-0"
+                        style="background-color: rgb(78, 222, 163); width: 5.19738px; height: 5.19738px; left: 50%; --tw-translate-x: -25.62062678866424px; --tw-translate-y: -197.96824382078063px; animation: 0.701583s ease-out 0s 1 normal forwards running particle-trail;">
+                    </div>
+                    <div class="absolute w-1 h-1 rounded-full pointer-events-none opacity-0"
+                        style="background-color: rgb(255, 176, 205); width: 2.73015px; height: 2.73015px; left: 50%; --tw-translate-x: -17.295352213289295px; --tw-translate-y: -154.7105199187346px; animation: 0.740148s ease-out 0s 1 normal forwards running particle-trail;">
+                    </div>
+                </div>
+            </div>
+        </section>
+        <!-- BOTTOM AREA (30%): Block Selection Slots -->
+        <section class="w-full h-[25%] px-lg flex items-center justify-around gap-md mb-md">
+            <!-- Slot 1: Normal -->
+            <div
+                class="flex-1 aspect-square glass-panel rounded-xl flex items-center justify-center p-md cursor-pointer transition-all active:scale-95 group hover:bg-white/10">
+                <div class="grid grid-cols-2 grid-rows-2 gap-xs">
+                    <div class="w-6 h-6 bg-primary rounded-sm shadow-sm"></div>
+                    <div class="w-6 h-6 bg-primary rounded-sm shadow-sm"></div>
+                    <div class="w-6 h-6 bg-primary rounded-sm shadow-sm"></div>
+                    <div class="w-6 h-6 invisible"></div>
+                </div>
+            </div>
+            <!-- Slot 2: Frozen -->
+            <div
+                class="flex-1 aspect-square glass-panel rounded-xl flex items-center justify-center p-md cursor-not-allowed relative overflow-hidden">
+                <div class="grid grid-cols-2 grid-rows-2 gap-xs opacity-40">
+                    <div class="w-6 h-6 bg-tertiary rounded-sm"></div>
+                    <div class="w-6 h-6 bg-tertiary rounded-sm"></div>
+                    <div class="w-6 h-6 bg-tertiary rounded-sm"></div>
+                    <div class="w-6 h-6 bg-tertiary rounded-sm"></div>
+                </div>
+                <div class="absolute inset-0 ice-freeze flex flex-col items-center justify-center">
+                    <span class="material-symbols-outlined text-white text-xl"
+                        style="font-variation-settings: 'FILL' 1;">ac_unit</span>
+                    <span class="font-label-mono text-label-mono text-white mt-xs">0.5s</span>
+                </div>
+            </div>
+            <!-- Slot 3: Selected -->
+            <div
+                class="flex-1 aspect-square glass-panel rounded-xl flex items-center justify-center p-md cursor-pointer ring-2 ring-primary bg-white/10 shadow-[0_0_20px_rgba(173,198,255,0.3)] scale-110">
+                <div class="grid grid-cols-3 grid-rows-1 gap-xs">
+                    <div class="w-5 h-5 bg-secondary rounded-sm shadow-[0_0_5px_rgba(255,176,205,0.4)]"></div>
+                    <div class="w-5 h-5 bg-secondary rounded-sm shadow-[0_0_5px_rgba(255,176,205,0.4)]"></div>
+                    <div class="w-5 h-5 bg-secondary rounded-sm shadow-[0_0_5px_rgba(255,176,205,0.4)]"></div>
+                </div>
+            </div>
+        </section>
+    </main>
+    <!-- Bottom Navigation Bar (Injected Style Mapping) -->
+    <nav
+        class="fixed bottom-0 w-full z-50 flex justify-around items-center px-lg pb-safe h-20 bg-surface-container/90 backdrop-blur-lg border-t border-outline-variant/20 shadow-lg rounded-t-xl">
+        <button
+            class="flex flex-col items-center justify-center bg-secondary-container text-on-secondary-container rounded-xl p-2 shadow-[0_0_15px_rgba(170,2,102,0.4)]">
+            <span class="material-symbols-outlined">grid_view</span>
+            <span class="font-label-mono text-[10px] mt-1">GAMES</span>
+        </button>
+        <button
+            class="flex flex-col items-center justify-center text-on-surface-variant/60 p-2 hover:text-primary transition-colors">
+            <span class="material-symbols-outlined">emoji_events</span>
+            <span class="font-label-mono text-[10px] mt-1">LEAGUE</span>
+        </button>
+        <button
+            class="flex flex-col items-center justify-center text-on-surface-variant/60 p-2 hover:text-primary transition-colors">
+            <span class="material-symbols-outlined">military_tech</span>
+            <span class="font-label-mono text-[10px] mt-1">QUESTS</span>
+        </button>
+        <button
+            class="flex flex-col items-center justify-center text-on-surface-variant/60 p-2 hover:text-primary transition-colors">
+            <span class="material-symbols-outlined">person</span>
+            <span class="font-label-mono text-[10px] mt-1">PROFILE</span>
+        </button>
+    </nav>
+    <script>
+        // Simple touch interaction for vibration feel
+        document.querySelectorAll('button, .cursor-pointer').forEach(el => {
+            el.addEventListener('touchstart', () => {
+                if ('vibrate' in navigator) navigator.vibrate(10);
+            });
+        });
+
+        // Atmospheric particle generation for 'attack'
+        function createParticle() {
+            const container = document.querySelector('.particle-emitter');
+            if (!container) return;
+            const colors = ['#adc6ff', '#ffb0cd', '#4edea3'];
+            const p = document.createElement('div');
+            const size = Math.random() * 6 + 2;
+            const x = (Math.random() - 0.5) * 60;
+            const y = -150 - Math.random() * 100;
+            const color = colors[Math.floor(Math.random() * colors.length)];
+
+            p.className = 'absolute w-1 h-1 rounded-full pointer-events-none opacity-0';
+            p.style.backgroundColor = color;
+            p.style.width = `${size}px`;
+            p.style.height = `${size}px`;
+            p.style.left = '50%';
+            p.style.setProperty('--tw-translate-x', `${x}px`);
+            p.style.setProperty('--tw-translate-y', `${y}px`);
+            p.style.animation = `particle-trail ${0.5 + Math.random() * 0.5}s ease-out forwards`;
+
+            container.appendChild(p);
+            setTimeout(() => p.remove(), 1000);
+        }
+
+        setInterval(createParticle, 200);
+    </script>
+
+
+</body>
+
+</html>
