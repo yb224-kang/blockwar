@@ -1152,7 +1152,7 @@
                     cellEl.dataset.row = r;
                     cellEl.dataset.col = c;
                     
-                    cellEl.className = 'w-full h-full rounded-sm transition-all duration-200 relative ';
+                    cellEl.className = 'w-full h-full rounded-sm relative ';
                     
                     if (cell.type === 'empty') {
                         cellEl.className += themeColors.empty;
@@ -1491,7 +1491,7 @@
                     const dist = Math.sqrt(dx * dx + dy * dy);
                     const speed = dist / dt; // px/ms
                     
-                    if (speed > 1.4) {
+                    if (speed > 1.6) {
                         isFast = true;
                     }
                 }
@@ -1733,7 +1733,7 @@
                 if (cellEl) {
                     const cell = board[r][c];
                     if (cell.type === 'empty') {
-                        cellEl.className = 'w-full h-full rounded-sm transition-all duration-200 relative ' + themeColors.empty;
+                        cellEl.className = 'w-full h-full rounded-sm relative ' + themeColors.empty;
                     }
                 }
             });
