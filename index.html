@@ -419,8 +419,8 @@
                         <p class="text-xs text-on-surface-variant/60">퍼즐판의 격자 크기를 설정합니다.</p>
                     </div>
                     <select id="select-grid-size" class="bg-surface border-outline-variant rounded text-xs text-on-surface focus:ring-primary">
-                        <option value="8">8 x 8</option>
-                        <option value="10" selected>10 x 10</option>
+                        <option value="8" selected>8 x 8</option>
+                        <option value="10">10 x 10</option>
                         <option value="12">12 x 12</option>
                     </select>
                 </div>
@@ -453,7 +453,7 @@
 
     <script>
         // --- 1. GAME CONSTANTS & TEMPLATES ---
-        let GRID_SIZE = 10;
+        let GRID_SIZE = 8;
         
         // 블록 모양 (상대 좌표계 정의)
         const BLOCK_TEMPLATES = [
@@ -482,7 +482,7 @@
         let settings = {
             colorblind: false,
             stoneHP: 2,
-            gridSize: 10,
+            gridSize: 8,
             gameMode: 'single',
             theme: 'neon',
             blockPack: 'balanced'
@@ -1223,7 +1223,7 @@
                 const cols = maxC - minC + 1;
                 
                 const gridContainer = document.createElement('div');
-                gridContainer.className = `grid gap-[2px] pointer-events-none`;
+                gridContainer.className = `grid gap-[3px] pointer-events-none`;
                 gridContainer.style.gridTemplateRows = `repeat(${rows}, minmax(0, 1fr))`;
                 gridContainer.style.gridTemplateColumns = `repeat(${cols}, minmax(0, 1fr))`;
                 
@@ -1232,8 +1232,8 @@
                 for (let r = 0; r < rows; r++) {
                     for (let c = 0; c < cols; c++) {
                         const cellEl = document.createElement('div');
-                        const cellSize = block.cells.length > 3 ? 'w-4 h-4' : 'w-5 h-5';
-                        cellEl.className = `${cellSize} rounded-sm transition-all`;
+                        const cellSize = 'w-[28px] h-[28px]';
+                        cellEl.className = `${cellSize} rounded-md`;
                         
                         if (cellSet.has(`${r},${c}`)) {
                             cellEl.className += ' ' + (themeColors[block.color] || 'bg-outline');
@@ -1505,8 +1505,15 @@
                     // 이미 채워진 칸 위를 지나더라도 스냅을 그대로 걸어주고 붉은 경고를 표시
                     drawInvalidPreviewHighlight(targetCell.row, targetCell.col, block);
                 }
-                // 유효 여부에 관계없이 보드에 스냅이 걸렸다면 무조건 헬퍼를 숨겨 겹침을 방지하고 격자 단위 표현을 유지!
-                dragHelperEl.classList.add('opacity-0');
+                
+                // [UX 개량] 자석 스냅 맺힘 시 드래그 헬퍼를 투명화하지 않고, 헬퍼 좌표 자체를 격자 중심으로 강제 밀착 고정!
+                const centerCell = cellCenters.find(c => c.row === targetCell.row && c.col === targetCell.col);
+                if (centerCell) {
+                    const finalX = centerCell.x - (dragHelperEl.offsetWidth / 2);
+                    const finalY = centerCell.y - (dragHelperEl.offsetHeight / 2);
+                    dragHelperEl.style.transform = `translate3d(${finalX}px, ${finalY}px, 0)`;
+                }
+                dragHelperEl.classList.remove('opacity-0'); // 투명화 강제 방지
             } else {
                 // 스냅 범위 밖에서는 헬퍼 투명화 원복
                 dragHelperEl.classList.remove('opacity-0');
