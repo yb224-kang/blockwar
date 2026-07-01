@@ -303,8 +303,8 @@
         </button>
     </nav>
 
-    <!-- Floating Drag Helper (따라다니는 블록 미리보기) - 지연시간 제거로 드래그 스피드 초고속화 -->
-    <div id="drag-helper" class="fixed pointer-events-none z-[100] hidden opacity-95"></div>
+    <!-- Floating Drag Helper (따라다니는 블록 미리보기) - top-0 left-0을 주어 절대좌표계 일치시킴 -->
+    <div id="drag-helper" class="fixed top-0 left-0 pointer-events-none z-[100] hidden opacity-95"></div>
 
     <!-- Settings Modal -->
     <div id="modal-settings" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] hidden flex items-center justify-center p-md">
