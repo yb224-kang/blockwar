@@ -125,6 +125,55 @@
             backface-visibility: hidden;
             transform: translate3d(0, 0, 0);
         }
+
+        /* 쿵 안착 시 스프링 튐 피드백 */
+        @keyframes drop-bounce {
+            0% { transform: scale(1.18) translateZ(8px); filter: brightness(1.35); }
+            45% { transform: scale(0.92) translateZ(0); filter: brightness(1.1); }
+            75% { transform: scale(1.04); }
+            100% { transform: scale(1); }
+        }
+        .animate-drop-bounce {
+            animation: drop-bounce 0.3s cubic-bezier(0.25, 0.8, 0.25, 1.25) forwards;
+        }
+
+        /* 1줄 가벼운 쉐이크 */
+        @keyframes shake-light {
+            0%, 100% { transform: translate3d(0, 0, 0); }
+            20%, 60% { transform: translate3d(-2px, 1px, 0); }
+            40%, 80% { transform: translate3d(2px, -1px, 0); }
+        }
+        .animate-shake-light {
+            animation: shake-light 0.25s ease-in-out forwards;
+        }
+
+        /* 2줄 이상 & 크로스 강력 쉐이크 */
+        @keyframes shake-heavy {
+            0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+            10%, 90% { transform: translate3d(-5px, 3px, 0) scale(1.02); }
+            30%, 70% { transform: translate3d(5px, -3px, 0) scale(0.99); }
+            50% { transform: translate3d(-3px, -4px, 0) scale(1.03); }
+        }
+        .animate-shake-heavy {
+            animation: shake-heavy 0.4s cubic-bezier(.36,.07,.19,.97) forwards;
+        }
+
+        /* 격파 플래시 라이트 오버레이 */
+        @keyframes clear-flash {
+            0% { opacity: 0; filter: brightness(3); }
+            10% { opacity: 0.85; filter: brightness(2); }
+            100% { opacity: 0; filter: brightness(1); }
+        }
+        .animate-clear-flash::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: white;
+            border-radius: inherit;
+            z-index: 50;
+            pointer-events: none;
+            animation: clear-flash 0.35s ease-out forwards;
+        }
     </style>
     <script id="tailwind-config">
         tailwind.config = {
@@ -612,7 +661,8 @@
             aiFrozenSlots = [false, false, false];
             frozenTimers = [0, 0, 0];
             
-            // 슬롯에 블록 채우기
+            // 슬롯에 블록 채우기 (첫 덱 4~9칸 전술형 블록 강제 생성)
+            isFirstSlotFill = true;
             fillAllSlots();
             
             // --- PvP 모드 초기화 ---
@@ -1262,12 +1312,22 @@
             }
         }
 
+        let isFirstSlotFill = true; // 최초 게임 시작 시 첫 덱 강제 배정 플래그
+
         function fillAllSlots() {
             for (let i = 0; i < 3; i++) {
                 if (slots[i] === null && !playerFrozenSlots[i]) {
-                    slots[i] = getRandomBlockBasedOnScore(score);
+                    if (isFirstSlotFill) {
+                        // 첫 시작 시 지루함을 덜기 위해 4~9칸 크기의 전술형 블록 엄선
+                        const candidates = BLOCK_TEMPLATES.filter(t => t.cells.length >= 4);
+                        const randomTemplate = candidates[Math.floor(Math.random() * candidates.length)];
+                        slots[i] = JSON.parse(JSON.stringify(randomTemplate));
+                    } else {
+                        slots[i] = getRandomBlockBasedOnScore(score);
+                    }
                 }
             }
+            isFirstSlotFill = false; // 최초 스폰 후 플래그 자동 해제
         }
 
         // 덱 팩 옵션 및 스코어 DDA 연동 가중치 스폰 알고리즘
@@ -1603,9 +1663,12 @@
                 const targetR = startRow + (r - baseR);
                 const targetC = startCol + (c - baseC);
                 
-                const cellEl = boardGridEl.querySelector(`[data-row="${targetR}"][data-col="${targetC}"]`);
+                const cellEl = cachedCellElements[targetR]?.[targetC];
                 if (cellEl) {
-                    cellEl.classList.add('animate-drop');
+                    cellEl.classList.add('animate-drop-bounce');
+                    setTimeout(() => {
+                        cellEl.classList.remove('animate-drop-bounce');
+                    }, 400);
                 }
             });
         }
@@ -1868,6 +1931,66 @@
             resetTimer();
         }
 
+        // 격파 라인 3D 불꽃 파편 폭발 연출 (도미노 물결 폭사 기법)
+        function createLineClearExplosion(rows, cols) {
+            const themeColors = {
+                neon: ['#adc6ff', '#ffb0cd', '#4edea3', '#ff7b72'],
+                wood: ['#e5b376', '#ad5c36', '#dcb27b', '#ffe4c4'],
+                candy: ['#ff92c6', '#b4f3ff', '#85ffab', '#fff']
+            };
+            const activeColors = themeColors[settings.theme] || themeColors.neon;
+            
+            const triggerExplosionAt = (r, c) => {
+                const cellEl = cachedCellElements[r]?.[c];
+                if (!cellEl) return;
+                const rect = cellEl.getBoundingClientRect();
+                const centerX = rect.left + rect.width / 2;
+                const centerY = rect.top + rect.height / 2;
+                
+                // 각 타일마다 5개의 파편 폭사
+                for (let i = 0; i < 5; i++) {
+                    const p = document.createElement('div');
+                    const size = Math.random() * 8 + 4; // 4px~12px 크기
+                    const randColor = activeColors[Math.floor(Math.random() * activeColors.length)];
+                    
+                    p.className = 'fixed pointer-events-none z-[99] rounded-sm shadow-md';
+                    p.style.backgroundColor = randColor;
+                    p.style.width = `${size}px`;
+                    p.style.height = `${size}px`;
+                    p.style.left = `${centerX}px`;
+                    p.style.top = `${centerY}px`;
+                    
+                    // 무작위 탄도 벡터
+                    const angle = Math.random() * Math.PI * 2;
+                    const speed = Math.random() * 110 + 50;
+                    const targetX = Math.cos(angle) * speed;
+                    const targetY = Math.sin(angle) * speed + 60; // 중력 가속 시뮬레이션
+                    
+                    document.body.appendChild(p);
+                    
+                    p.style.transition = 'all 0.45s cubic-bezier(0.1, 0.8, 0.3, 1)';
+                    requestAnimationFrame(() => {
+                        p.style.transform = `translate3d(${targetX}px, ${targetY}px, 0) rotate(${Math.random() * 360}deg) scale(0.1)`;
+                        p.style.opacity = '0';
+                    });
+                    
+                    setTimeout(() => p.remove(), 500);
+                }
+            };
+
+            // 도미노 물결 딜레이 격파 연출
+            rows.forEach(r => {
+                for (let c = 0; c < GRID_SIZE; c++) {
+                    setTimeout(() => triggerExplosionAt(r, c), c * 30);
+                }
+            });
+            cols.forEach(c => {
+                for (let r = 0; r < GRID_SIZE; r++) {
+                    setTimeout(() => triggerExplosionAt(r, c), r * 30);
+                }
+            });
+        }
+
         // 라인 클리어 로직
         function processLinesAndScores() {
             let rowsToClear = [];
@@ -1913,6 +2036,33 @@
                 // 콤보 플로팅 UI 띄우기
                 triggerComboFloatingEffect(combo);
                 
+                // [UX 개량] 보드판 쉐이크 및 격파 플래시 적용 (격파 등급 비례 연출)
+                const boardContainer = document.getElementById('game-board-container');
+                if (boardContainer) {
+                    boardContainer.classList.remove('animate-shake-light', 'animate-shake-heavy', 'animate-clear-flash');
+                    
+                    if (rowsToClear.length > 0 && colsToClear.length > 0) {
+                        // 가로 & 세로 동시 격파 (크로스 크래시) -> 울트라 헤비 쉐이크 + 번쩍 플래시
+                        boardContainer.classList.add('animate-shake-heavy', 'animate-clear-flash');
+                        if ('vibrate' in navigator) navigator.vibrate([60, 40, 60, 40, 100]);
+                    } else if (totalLines >= 2) {
+                        // 2줄 이상 다중 격파 -> 헤비 쉐이크
+                        boardContainer.classList.add('animate-shake-heavy');
+                        if ('vibrate' in navigator) navigator.vibrate([40, 30, 80]);
+                    } else {
+                        // 1줄 격파 -> 가벼운 쉐이크
+                        boardContainer.classList.add('animate-shake-light');
+                        if ('vibrate' in navigator) navigator.vibrate([30, 20, 30]);
+                    }
+                    
+                    setTimeout(() => {
+                        boardContainer.classList.remove('animate-shake-light', 'animate-shake-heavy', 'animate-clear-flash');
+                    }, 500);
+                }
+
+                // [UX 개량] 화려한 파티클 폭사 연출 트리거
+                createLineClearExplosion(rowsToClear, colsToClear);
+                
                 // 돌 충격 및 제거 처리
                 const targetCells = new Set();
                 rowsToClear.forEach(r => {
@@ -1937,9 +2087,6 @@
                         board[r][c] = createEmptyCell();
                     }
                 });
-                
-                // 타격감 진동 효과
-                if ('vibrate' in navigator) navigator.vibrate([30, 20, 30]);
                 
                 // PvP 모드일 때 콤보나 라인 폭파 발생 시 상대를 향한 공격 구동
                 if (settings.gameMode === 'pvp' && combo >= 1) {
