@@ -1501,7 +1501,15 @@
             
             // 빠를 때는 자석 스냅을 무시하여 드래그 헬퍼 깜빡임 및 버벅임 완전 방지 (보정된 targetX, targetY 기준 스냅)
             const block = slots[activeDragIndex];
-            const targetCell = isFast ? null : getClosestCell(targetX, targetY + dragOffset.y, block);
+            let targetCell = isFast ? null : getClosestCell(targetX, targetY + dragOffset.y, block);
+            
+            // [UX 정밀 튜닝] 이미 채워진 격자 위를 지날 때는 자석(스냅) 효과를 원천 배제!
+            if (targetCell) {
+                const isValid = isValidPlacement(targetCell.row, targetCell.col, block);
+                if (!isValid) {
+                    targetCell = null;
+                }
+            }
             
             const targetKey = targetCell ? `${targetCell.row},${targetCell.col}` : "";
             if (targetKey === lastTargetCellKey) {
