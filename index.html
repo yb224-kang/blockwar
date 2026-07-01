@@ -489,25 +489,25 @@
         // 테마별 컬러 및 섀도우 매핑 테이블 (프리미엄 3종 비주얼 연출)
         const THEME_COLORS = {
             neon: {
-                primary: 'bg-primary border-b-[3px] border-r-[3px] border-black/40 shadow-[0_0_12px_rgba(173,198,255,0.5),inset_0_2px_3px_rgba(255,255,255,0.4)]',
-                secondary: 'bg-secondary border-b-[3px] border-r-[3px] border-black/40 shadow-[0_0_12px_rgba(255,176,205,0.5),inset_0_2px_3px_rgba(255,255,255,0.4)]',
-                tertiary: 'bg-tertiary border-b-[3px] border-r-[3px] border-black/40 shadow-[0_0_12px_rgba(78,222,163,0.5),inset_0_2px_3px_rgba(255,255,255,0.4)]',
-                empty: 'bg-black/35 shadow-[inset_0_2px_4px_rgba(0,0,0,0.6)] border border-white/[0.02]',
-                boardBg: 'glass-panel rounded-xl p-unit shadow-[inset_0_4px_15px_rgba(0,0,0,0.85),0_15px_30px_rgba(0,0,0,0.7)] border border-white/10'
+                primary: 'bg-gradient-to-br from-[#9bb7ff] to-[#adc6ff] border-[1px] border-white/20 border-b-[4px] border-r-[4px] border-black/50 shadow-[0_5px_10px_rgba(0,0,0,0.5),0_0_12px_rgba(173,198,255,0.6),inset_0_2px_3px_rgba(255,255,255,0.4)]',
+                secondary: 'bg-gradient-to-br from-[#ffa1c1] to-[#ffb0cd] border-[1px] border-white/20 border-b-[4px] border-r-[4px] border-black/50 shadow-[0_5px_10px_rgba(0,0,0,0.5),0_0_12px_rgba(255,176,205,0.6),inset_0_2px_3px_rgba(255,255,255,0.4)]',
+                tertiary: 'bg-gradient-to-br from-[#47dfa0] to-[#5effc3] border-[1px] border-white/20 border-b-[4px] border-r-[4px] border-black/50 shadow-[0_5px_10px_rgba(0,0,0,0.5),0_0_12px_rgba(78,222,163,0.6),inset_0_2px_3px_rgba(255,255,255,0.4)]',
+                empty: 'bg-black/45 shadow-[inset_0_3px_5px_rgba(0,0,0,0.8)] border border-white/[0.01]',
+                boardBg: 'glass-panel rounded-xl p-unit shadow-[inset_0_8px_20px_rgba(0,0,0,0.95),0_20px_40px_rgba(0,0,0,0.8)] border border-white/10'
             },
             wood: {
-                primary: 'bg-[#d7a15c] border-b-[3px] border-r-[3px] border-[#5d3b14] shadow-[inset_0_2px_3px_rgba(255,255,255,0.3)]',
-                secondary: 'bg-[#a0522d] border-b-[3px] border-r-[3px] border-[#3d1808] shadow-[inset_0_2px_3px_rgba(255,255,255,0.3)]',
-                tertiary: 'bg-[#cd853f] border-b-[3px] border-r-[3px] border-[#5d3b14] shadow-[inset_0_2px_3px_rgba(255,255,255,0.3)]',
-                empty: 'bg-[#1b120c] shadow-[inset_0_3px_6px_rgba(0,0,0,0.9)] border border-[#5d3b14]/20',
-                boardBg: 'bg-[#3b2f2f] rounded-xl p-unit shadow-[0_15px_30px_rgba(0,0,0,0.8)] border border-[#5d3b14]'
+                primary: 'bg-gradient-to-br from-[#e5b376] to-[#b77f3e] border-[1.5px] border-[#ffe4c4]/45 border-b-[4px] border-r-[4px] border-[#381e05] rounded-md shadow-[0_5px_10px_rgba(0,0,0,0.65),inset_0_2px_2px_rgba(255,255,255,0.4)]',
+                secondary: 'bg-gradient-to-br from-[#ad5c36] to-[#7f3917] border-[1.5px] border-[#ffe4c4]/35 border-b-[4px] border-r-[4px] border-[#200c02] rounded-md shadow-[0_5px_10px_rgba(0,0,0,0.65),inset_0_2px_2px_rgba(255,255,255,0.3)]',
+                tertiary: 'bg-gradient-to-br from-[#dcb27b] to-[#b18349] border-[1.5px] border-[#ffe4c4]/40 border-b-[4px] border-r-[4px] border-[#381e05] rounded-md shadow-[0_5px_10px_rgba(0,0,0,0.65),inset_0_2px_2px_rgba(255,255,255,0.35)]',
+                empty: 'bg-[#150a04] shadow-[inset_0_4px_6px_rgba(0,0,0,0.9)] border border-[#3e2712]/15',
+                boardBg: 'bg-[#29170a] rounded-xl p-unit shadow-[inset_0_12px_25px_rgba(0,0,0,0.95),0_20px_45px_rgba(0,0,0,0.85)] border-4 border-[#3e230c] outline outline-1 outline-[#100702]'
             },
             candy: {
-                primary: 'bg-[#ff79c6] border-b-[3px] border-r-[3px] border-pink-950 shadow-[0_0_8px_rgba(255,121,198,0.5),inset_0_2px_3px_rgba(255,255,255,0.6)]',
-                secondary: 'bg-[#8be9fd] border-b-[3px] border-r-[3px] border-cyan-950 shadow-[0_0_8px_rgba(139,233,253,0.5),inset_0_2px_3px_rgba(255,255,255,0.6)]',
-                tertiary: 'bg-[#50fa7b] border-b-[3px] border-r-[3px] border-green-950 shadow-[0_0_8px_rgba(80,250,123,0.5),inset_0_2px_3px_rgba(255,255,255,0.6)]',
-                empty: 'bg-[#19191e] shadow-[inset_0_2px_4px_rgba(0,0,0,0.4)] border border-pink-300/10',
-                boardBg: 'bg-[#282a36] rounded-xl p-unit shadow-[0_15px_30px_rgba(0,0,0,0.8)] border border-pink-400/20'
+                primary: 'bg-gradient-to-br from-[#ff92c6] to-[#ff4099] border-[1.5px] border-white/60 border-b-[4px] border-r-[4px] border-[#5e0a36] rounded-xl shadow-[0_5px_10px_rgba(255,121,198,0.4),inset_0_3px_3px_rgba(255,255,255,0.7)]',
+                secondary: 'bg-gradient-to-br from-[#b4f3ff] to-[#46d6f5] border-[1.5px] border-white/60 border-b-[4px] border-r-[4px] border-[#0a4857] rounded-xl shadow-[0_5px_10px_rgba(139,233,253,0.4),inset_0_3px_3px_rgba(255,255,255,0.7)]',
+                tertiary: 'bg-gradient-to-br from-[#85ffab] to-[#25df59] border-[1.5px] border-white/60 border-b-[4px] border-r-[4px] border-[#065017] rounded-xl shadow-[0_5px_10px_rgba(80,250,123,0.4),inset_0_3px_3px_rgba(255,255,255,0.7)]',
+                empty: 'bg-[#110e19] shadow-[inset_0_3px_5px_rgba(0,0,0,0.7)] border border-pink-500/[0.04]',
+                boardBg: 'bg-[#241d33] rounded-xl p-unit shadow-[inset_0_8px_20px_rgba(0,0,0,0.95),0_18px_35px_rgba(0,0,0,0.8)] border border-pink-400/10'
             }
         };
 
@@ -1198,9 +1198,30 @@
 
                 const block = slots[i];
                 if (!block) {
+                    slotEl.className = 'slot-container w-[28%] aspect-square flex items-center justify-center rounded-xl cursor-pointer transition-all active:scale-95 border border-transparent relative';
                     slotEl.innerHTML += '<span class="material-symbols-outlined text-white/10 text-2xl select-none">block</span>';
                     continue;
                 }
+
+                // 대기 슬롯 블록의 후광(Glow Aura) 이펙트 적용 (테마별 매핑)
+                const glowColors = {
+                    primary: 'shadow-[0_0_20px_rgba(173,198,255,0.22)] bg-[#adc6ff]/5 border-[#adc6ff]/10',
+                    secondary: 'shadow-[0_0_20px_rgba(255,176,205,0.22)] bg-[#ffb0cd]/5 border-[#ffb0cd]/10',
+                    tertiary: 'shadow-[0_0_20px_rgba(78,222,163,0.22)] bg-[#4edea3]/5 border-[#4edea3]/10'
+                };
+                const woodGlowColors = {
+                    primary: 'shadow-[0_0_20px_rgba(229,179,118,0.25)] bg-[#e5b376]/5 border-[#e5b376]/10',
+                    secondary: 'shadow-[0_0_20px_rgba(173,92,54,0.25)] bg-[#ad5c36]/5 border-[#ad5c36]/10',
+                    tertiary: 'shadow-[0_0_20px_rgba(220,178,123,0.25)] bg-[#dcb27b]/5 border-[#dcb27b]/10'
+                };
+                const candyGlowColors = {
+                    primary: 'shadow-[0_0_20px_rgba(255,146,198,0.25)] bg-[#ff92c6]/5 border-[#ff92c6]/10',
+                    secondary: 'shadow-[0_0_20px_rgba(180,243,255,0.25)] bg-[#b4f3ff]/5 border-[#b4f3ff]/10',
+                    tertiary: 'shadow-[0_0_20px_rgba(133,255,171,0.25)] bg-[#85ffab]/5 border-[#85ffab]/10'
+                };
+
+                const selectedGlow = settings.theme === 'wood' ? woodGlowColors : (settings.theme === 'candy' ? candyGlowColors : glowColors);
+                slotEl.className = `slot-container w-[28%] aspect-square flex items-center justify-center rounded-xl cursor-pointer transition-all active:scale-95 border relative ${selectedGlow[block.color] || 'border-white/5 bg-white/5'}`;
 
                 let minR = 99, maxR = -99, minC = 99, maxC = -99;
                 block.cells.forEach(([r, c]) => {
@@ -1404,12 +1425,8 @@
                     cellEl.className = 'w-[28px] h-[28px] rounded-md';
                     
                     if (cellSet.has(`${r},${c}`)) {
-                        const colorMap = {
-                            primary: 'bg-primary border-b-[3px] border-r-[3px] border-black/40 shadow-[0_10px_20px_rgba(0,0,0,0.5),0_0_12px_rgba(173,198,255,0.5),inset_0_2px_3px_rgba(255,255,255,0.4)]',
-                            secondary: 'bg-secondary border-b-[3px] border-r-[3px] border-black/40 shadow-[0_10px_20px_rgba(0,0,0,0.5),0_0_12px_rgba(255,176,205,0.5),inset_0_2px_3px_rgba(255,255,255,0.4)]',
-                            tertiary: 'bg-tertiary border-b-[3px] border-r-[3px] border-black/40 shadow-[0_10px_20px_rgba(0,0,0,0.5),0_0_12px_rgba(78,222,163,0.5),inset_0_2px_3px_rgba(255,255,255,0.4)]'
-                        };
-                        cellEl.className += ' ' + colorMap[block.color];
+                        const themeColors = THEME_COLORS[settings.theme] || THEME_COLORS.neon;
+                        cellEl.className += ' ' + (themeColors[block.color] || 'bg-outline');
                         if (settings.colorblind && block.patternClass) {
                             cellEl.classList.add(block.patternClass);
                         }
