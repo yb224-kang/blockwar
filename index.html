@@ -118,6 +118,13 @@
             0% { opacity: 0.65; }
             100% { opacity: 1; }
         }
+
+        /* GPU 하드웨어 가속 강제 활성화 및 레이어 조기 분리 (Reflow 방지) */
+        #board-grid div, #drag-helper div, .slot-container div {
+            will-change: transform, opacity;
+            backface-visibility: hidden;
+            transform: translate3d(0, 0, 0);
+        }
     </style>
     <script id="tailwind-config">
         tailwind.config = {
@@ -1601,29 +1608,29 @@
         function getClosestValidCell(x, y, block) {
             if (cellCenters.length === 0) return null;
             
-            // 1. 모든 셀과의 거리 계산
-            const list = cellCenters.map(cell => {
+            const maxSnapDistanceSquare = 120 * 120; // 14400 (무거운 Math.sqrt 회피용 제곱 비교)
+            let minSquareDist = Infinity;
+            let closest = null;
+            
+            for (let i = 0; i < cellCenters.length; i++) {
+                const cell = cellCenters[i];
                 const dx = cell.x - x;
                 const dy = cell.y - y;
-                const dist = Math.sqrt(dx * dx + dy * dy);
-                return { cell, dist };
-            });
-            
-            // 2. 거리 순으로 정렬
-            list.sort((a, b) => a.dist - b.dist);
-            
-            // 3. 가장 가까운 셀부터 배치 유효성 검사 (스냅 반경 제한: 약 3.5칸 이내 거리인 120px)
-            const maxSnapDistance = 120;
-            
-            for (let item of list) {
-                if (item.dist > maxSnapDistance) break;
+                const distSq = dx * dx + dy * dy;
                 
-                if (isValidPlacement(item.cell.row, item.cell.col, block)) {
-                    return {
-                        row: item.cell.row,
-                        col: item.cell.col
-                    };
+                if (distSq <= maxSnapDistanceSquare && distSq < minSquareDist) {
+                    if (isValidPlacement(cell.row, cell.col, block)) {
+                        minSquareDist = distSq;
+                        closest = cell;
+                    }
                 }
+            }
+            
+            if (closest) {
+                return {
+                    row: closest.row,
+                    col: closest.col
+                };
             }
             return null;
         }
@@ -1632,20 +1639,26 @@
         function getClosestCell(x, y) {
             if (cellCenters.length === 0) return null;
             
-            const list = cellCenters.map(cell => {
+            const maxSnapDistanceSquare = 120 * 120; // 14400
+            let minSquareDist = Infinity;
+            let closest = null;
+            
+            for (let i = 0; i < cellCenters.length; i++) {
+                const cell = cellCenters[i];
                 const dx = cell.x - x;
                 const dy = cell.y - y;
-                const dist = Math.sqrt(dx * dx + dy * dy);
-                return { cell, dist };
-            });
+                const distSq = dx * dx + dy * dy;
+                
+                if (distSq <= maxSnapDistanceSquare && distSq < minSquareDist) {
+                    minSquareDist = distSq;
+                    closest = cell;
+                }
+            }
             
-            list.sort((a, b) => a.dist - b.dist);
-            
-            const maxSnapDistance = 120;
-            if (list[0].dist <= maxSnapDistance) {
+            if (closest) {
                 return {
-                    row: list[0].cell.row,
-                    col: list[0].cell.col
+                    row: closest.row,
+                    col: closest.col
                 };
             }
             return null;
