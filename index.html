@@ -1454,8 +1454,8 @@
             const clientX = e.touches ? e.touches[0].clientX : e.clientX;
             const clientY = e.touches ? e.touches[0].clientY : e.clientY;
             
-            // 드래그 감도 1.35배 증폭 처리 (손가락 대비 이동 범위 확장)
-            const sensitivity = 1.35;
+            // 드래그 감도 1.55배 증폭 처리 (손가락 대비 이동 범위 확장)
+            const sensitivity = 1.55;
             const dx = clientX - touchStartPos.x;
             const dy = clientY - touchStartPos.y;
             
@@ -1519,8 +1519,8 @@
             const clientX = e.changedTouches ? e.changedTouches[0].clientX : e.clientX;
             const clientY = e.changedTouches ? e.changedTouches[0].clientY : e.clientY;
             
-            // 드래그 감도 1.35배 동일 증폭 처리
-            const sensitivity = 1.35;
+            // 드래그 감도 1.55배 동일 증폭 처리
+            const sensitivity = 1.55;
             const dx = clientX - touchStartPos.x;
             const dy = clientY - touchStartPos.y;
             
