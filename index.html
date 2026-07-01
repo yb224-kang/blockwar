@@ -1501,13 +1501,12 @@
                 const isValid = isValidPlacement(targetCell.row, targetCell.col, block);
                 if (isValid) {
                     drawPreviewHighlight(targetCell.row, targetCell.col, block);
-                    // 안착 가능 자석 스냅 맺히면 손가락 밑 드래그 헬퍼는 숨겨 겹침 방지
-                    dragHelperEl.classList.add('opacity-0');
                 } else {
                     // 이미 채워진 칸 위를 지나더라도 스냅을 그대로 걸어주고 붉은 경고를 표시
                     drawInvalidPreviewHighlight(targetCell.row, targetCell.col, block);
-                    dragHelperEl.classList.remove('opacity-0'); // 손가락 밑 헬퍼는 계속 보여줌
                 }
+                // 유효 여부에 관계없이 보드에 스냅이 걸렸다면 무조건 헬퍼를 숨겨 겹침을 방지하고 격자 단위 표현을 유지!
+                dragHelperEl.classList.add('opacity-0');
             } else {
                 // 스냅 범위 밖에서는 헬퍼 투명화 원복
                 dragHelperEl.classList.remove('opacity-0');
