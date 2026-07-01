@@ -685,43 +685,12 @@
         }
 
         function spawnStones(count) {
-            // 보드판 크기에 맞추어 장애물 기본 수 조절
-            const finalCount = GRID_SIZE === 8 ? 2 : (GRID_SIZE === 12 ? 6 : count);
-            let spawned = 0;
-            while (spawned < finalCount) {
-                const r = Math.floor(Math.random() * (GRID_SIZE - 2)) + 1; // 너무 구석을 피함
-                const c = Math.floor(Math.random() * (GRID_SIZE - 2)) + 1;
-                if (board[r][c].type === 'empty') {
-                    board[r][c] = {
-                        type: 'stone',
-                        color: null,
-                        health: settings.stoneHP,
-                        maxHealth: settings.stoneHP,
-                        patternClass: null
-                    };
-                    spawned++;
-                }
-            }
+            // 돌 장애물 비활성화
         }
 
         // --- PvP & 가상 AI 서포트 함수 세트 ---
         function spawnStonesAI(count) {
-            const finalCount = GRID_SIZE === 8 ? 2 : (GRID_SIZE === 12 ? 6 : count);
-            let spawned = 0;
-            while (spawned < finalCount) {
-                const r = Math.floor(Math.random() * (GRID_SIZE - 2)) + 1;
-                const c = Math.floor(Math.random() * (GRID_SIZE - 2)) + 1;
-                if (aiBoard[r][c].type === 'empty') {
-                    aiBoard[r][c] = {
-                        type: 'stone',
-                        color: null,
-                        health: settings.stoneHP,
-                        maxHealth: settings.stoneHP,
-                        patternClass: null
-                    };
-                    spawned++;
-                }
-            }
+            // 돌 장애물 비활성화
         }
 
         function fillAllSlotsAI() {
@@ -1998,35 +1967,27 @@
 
             const targetBoard = fromPlayer ? aiBoard : board;
             const size = GRID_SIZE;
-            let emptyCells = [];
             
+            // 상대 보드판의 이미 채워진 블록들 중 무작위 3칸을 쾅 폭사(소멸)시켜 배치를 방해
+            let occupiedCells = [];
             for (let r = 0; r < size; r++) {
                 for (let c = 0; c < size; c++) {
-                    if (targetBoard[r][c].type === 'empty') {
-                        emptyCells.push({ r, c });
+                    if (targetBoard[r][c].type === 'block') {
+                        occupiedCells.push({ r, c });
                     }
                 }
             }
-
-            // 빈 곳 중 무작위 2곳에 돌 배치 (체력 2짜리)
-            for (let i = 0; i < 2; i++) {
-                if (emptyCells.length > 0) {
-                    const idx = Math.floor(Math.random() * emptyCells.length);
-                    const target = emptyCells.splice(idx, 1)[0];
-                    
-                    targetBoard[target.r][target.c] = {
-                        type: 'stone',
-                        color: null,
-                        health: settings.stoneHP,
-                        maxHealth: settings.stoneHP,
-                        patternClass: null
-                    };
-                }
+            
+            const blastCount = Math.min(3, occupiedCells.length);
+            for (let i = 0; i < blastCount; i++) {
+                const idx = Math.floor(Math.random() * occupiedCells.length);
+                const target = occupiedCells.splice(idx, 1)[0];
+                targetBoard[target.r][target.c] = createEmptyCell(); // 화염 폭사 소멸
             }
 
             if (fromPlayer) {
                 renderAiBoard();
-                aiHP = Math.max(0, aiHP - 10);
+                aiHP = Math.max(0, aiHP - 25);
                 if (aiHpBarEl) aiHpBarEl.style.width = `${aiHP}%`;
                 if (aiHP <= 0) triggerGameOver(true, "상대방의 체력을 전멸시켜 승리했습니다!");
             } else {
