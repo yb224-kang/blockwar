@@ -97,6 +97,15 @@
         .animate-shake {
             animation: shake 0.3s ease-in-out;
         }
+
+        /* 빙결 락 오버레이 및 복사 방지 */
+        .ice-freeze {
+            background: linear-gradient(135deg, rgba(0, 162, 255, 0.45) 0%, rgba(200, 240, 255, 0.8) 100%) !important;
+            box-shadow: 0 0 15px rgba(0, 162, 255, 0.8) !important;
+            border: 1px solid rgba(255, 255, 255, 0.7) !important;
+            pointer-events: none !important;
+            filter: brightness(1.2);
+        }
     </style>
     <script id="tailwind-config">
         tailwind.config = {
@@ -244,6 +253,17 @@
             </div>
         </div>
 
+        <!-- 마나바 영역 (PvP 대전 시 활성화) -->
+        <div id="mana-panel" class="w-full max-w-[300px] flex flex-col gap-[2px] mx-auto px-1 flex-shrink-0 mt-[2px] hidden">
+            <div class="flex justify-between items-end px-1">
+                <span class="font-label-mono text-[7px] text-on-surface-variant/60 uppercase tracking-widest">Skill Mana</span>
+                <span id="mana-text" class="font-label-mono text-[8px] text-[#3b82f6] font-bold">0 / 100</span>
+            </div>
+            <div class="h-[6px] w-full bg-surface-container-highest/20 rounded-full overflow-hidden border border-outline-variant/10 relative">
+                <div id="mana-bar" class="h-full bg-gradient-to-r from-blue-500 to-cyan-400 w-0 transition-all duration-300 shadow-[0_0_8px_#3b82f6]"></div>
+            </div>
+        </div>
+
         <!-- MAIN BOARD AREA: 너비를 300px로 최적화하여 뷰포트 맞춤 -->
         <section class="relative w-full max-w-[300px] flex items-center justify-center mx-auto my-1 flex-shrink-0">
             <div id="game-board-container" class="relative w-full aspect-square glass-panel rounded-xl p-unit shadow-[inset_0_4px_15px_rgba(0,0,0,0.85),0_15px_30px_rgba(0,0,0,0.7)] border border-white/10 overflow-hidden select-none">
@@ -264,6 +284,16 @@
                 <div class="particle-emitter relative w-full h-full"></div>
             </div>
         </section>
+
+        <!-- ACTIVE SKILLS PANEL (PvP 모드 전용 노출) -->
+        <div id="skills-panel" class="w-full max-w-[300px] flex justify-between items-center mx-auto my-1 flex-shrink-0 hidden">
+            <button id="btn-skill-meteor" class="w-[48%] py-1.5 glass-panel rounded-xl flex items-center justify-center gap-1.5 border border-orange-500/20 text-orange-400/40 font-bold text-[9px] cursor-not-allowed transition-all active:scale-95">
+                <span class="material-symbols-outlined text-[14px]">mode_fan</span>메테오 (50)
+            </button>
+            <button id="btn-skill-freeze" class="w-[48%] py-1.5 glass-panel rounded-xl flex items-center justify-center gap-1.5 border border-blue-500/20 text-blue-400/40 font-bold text-[9px] cursor-not-allowed transition-all active:scale-95">
+                <span class="material-symbols-outlined text-[14px]">ac_unit</span>빙결 (60)
+            </button>
+        </div>
 
         <!-- BOTTOM AREA: 보드판과 일치하는 300px 너비 및 간격 확보 -->
         <section class="w-full max-w-[300px] flex items-center justify-center mx-auto mt-4 pb-2 flex-shrink-0">
@@ -344,6 +374,28 @@
                 </div>
                 <div class="flex items-center justify-between">
                     <div>
+                        <p class="font-body-lg text-sm text-on-surface">블록 덱 빌딩</p>
+                        <p class="text-xs text-on-surface-variant/60">퍼즐 블록 스폰 팩 프리셋을 지정합니다.</p>
+                    </div>
+                    <select id="select-block-pack" class="bg-surface border-outline-variant rounded text-xs text-on-surface focus:ring-primary">
+                        <option value="balanced" selected>밸런스 팩</option>
+                        <option value="combo">콤보 팩 (미니 블록 위주)</option>
+                        <option value="tactical">하드 팩 (대형 블록, 스코어 2배)</option>
+                    </select>
+                </div>
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="font-body-lg text-sm text-on-surface">비주얼 테마 스킨</p>
+                        <p class="text-xs text-on-surface-variant/60">게임 스킨 및 배경 테마를 바꿉니다.</p>
+                    </div>
+                    <select id="select-theme" class="bg-surface border-outline-variant rounded text-xs text-on-surface focus:ring-primary">
+                        <option value="neon" selected>사이버 네온</option>
+                        <option value="wood">클래식 우드</option>
+                        <option value="candy">캔디 젤리</option>
+                    </select>
+                </div>
+                <div class="flex items-center justify-between">
+                    <div>
                         <p class="font-body-lg text-sm text-on-surface">보드판 크기 (NxN)</p>
                         <p class="text-xs text-on-surface-variant/60">퍼즐판의 격자 크기를 설정합니다.</p>
                     </div>
@@ -412,7 +464,9 @@
             colorblind: false,
             stoneHP: 2,
             gridSize: 10,
-            gameMode: 'single'
+            gameMode: 'single',
+            theme: 'neon',
+            blockPack: 'balanced'
         };
 
         // PvP & 타이머 상태
@@ -424,6 +478,38 @@
         let aiSlots = [null, null, null];
         let aiHP = 100;
         let aiInterval = null;
+
+        // 마나 & 액티브 스킬 상태
+        let mana = 0;
+        let aiMana = 0;
+        let playerFrozenSlots = [false, false, false];
+        let aiFrozenSlots = [false, false, false];
+        let frozenTimers = [0, 0, 0]; // 6초 카운트다운용
+
+        // 테마별 컬러 및 섀도우 매핑 테이블 (프리미엄 3종 비주얼 연출)
+        const THEME_COLORS = {
+            neon: {
+                primary: 'bg-primary border-b-[3px] border-r-[3px] border-black/40 shadow-[0_0_12px_rgba(173,198,255,0.5),inset_0_2px_3px_rgba(255,255,255,0.4)]',
+                secondary: 'bg-secondary border-b-[3px] border-r-[3px] border-black/40 shadow-[0_0_12px_rgba(255,176,205,0.5),inset_0_2px_3px_rgba(255,255,255,0.4)]',
+                tertiary: 'bg-tertiary border-b-[3px] border-r-[3px] border-black/40 shadow-[0_0_12px_rgba(78,222,163,0.5),inset_0_2px_3px_rgba(255,255,255,0.4)]',
+                empty: 'bg-black/35 shadow-[inset_0_2px_4px_rgba(0,0,0,0.6)] border border-white/[0.02]',
+                boardBg: 'glass-panel rounded-xl p-unit shadow-[inset_0_4px_15px_rgba(0,0,0,0.85),0_15px_30px_rgba(0,0,0,0.7)] border border-white/10'
+            },
+            wood: {
+                primary: 'bg-[#d7a15c] border-b-[3px] border-r-[3px] border-[#5d3b14] shadow-[inset_0_2px_3px_rgba(255,255,255,0.3)]',
+                secondary: 'bg-[#a0522d] border-b-[3px] border-r-[3px] border-[#3d1808] shadow-[inset_0_2px_3px_rgba(255,255,255,0.3)]',
+                tertiary: 'bg-[#cd853f] border-b-[3px] border-r-[3px] border-[#5d3b14] shadow-[inset_0_2px_3px_rgba(255,255,255,0.3)]',
+                empty: 'bg-[#1b120c] shadow-[inset_0_3px_6px_rgba(0,0,0,0.9)] border border-[#5d3b14]/20',
+                boardBg: 'bg-[#3b2f2f] rounded-xl p-unit shadow-[0_15px_30px_rgba(0,0,0,0.8)] border border-[#5d3b14]'
+            },
+            candy: {
+                primary: 'bg-[#ff79c6] border-b-[3px] border-r-[3px] border-pink-950 shadow-[0_0_8px_rgba(255,121,198,0.5),inset_0_2px_3px_rgba(255,255,255,0.6)]',
+                secondary: 'bg-[#8be9fd] border-b-[3px] border-r-[3px] border-cyan-950 shadow-[0_0_8px_rgba(139,233,253,0.5),inset_0_2px_3px_rgba(255,255,255,0.6)]',
+                tertiary: 'bg-[#50fa7b] border-b-[3px] border-r-[3px] border-green-950 shadow-[0_0_8px_rgba(80,250,123,0.5),inset_0_2px_3px_rgba(255,255,255,0.6)]',
+                empty: 'bg-[#19191e] shadow-[inset_0_2px_4px_rgba(0,0,0,0.4)] border border-pink-300/10',
+                boardBg: 'bg-[#282a36] rounded-xl p-unit shadow-[0_15px_30px_rgba(0,0,0,0.8)] border border-pink-400/20'
+            }
+        };
 
         // UI 캐싱
         const boardGridEl = document.getElementById('board-grid');
@@ -439,6 +525,8 @@
         const selectStoneHP = document.getElementById('select-stone-hp');
         const selectGridSize = document.getElementById('select-grid-size');
         const selectGameMode = document.getElementById('select-game-mode');
+        const selectBlockPack = document.getElementById('select-block-pack');
+        const selectTheme = document.getElementById('select-theme');
 
         const opponentPanel = document.getElementById('opponent-panel');
         const aiBoardGridEl = document.getElementById('ai-board-grid');
@@ -448,6 +536,13 @@
         const timerTextEl = document.getElementById('timer-text');
         const modeTextEl = document.getElementById('mode-text');
 
+        const manaPanel = document.getElementById('mana-panel');
+        const manaBarEl = document.getElementById('mana-bar');
+        const manaTextEl = document.getElementById('mana-text');
+        const skillsPanel = document.getElementById('skills-panel');
+        const btnSkillMeteor = document.getElementById('btn-skill-meteor');
+        const btnSkillFreeze = document.getElementById('btn-skill-freeze');
+
         // --- 3. INIT ENGINE ---
         function initGame() {
             score = 0;
@@ -455,6 +550,9 @@
             updateScoreUI();
             
             GRID_SIZE = settings.gridSize;
+
+            // 테마 비주얼 적용
+            applyTheme();
 
             // 그리드 레이아웃 동적 반영
             boardGridEl.style.gridTemplateColumns = `repeat(${GRID_SIZE}, minmax(0, 1fr))`;
@@ -480,6 +578,11 @@
             // 임의의 위치에 돌 장애물 스폰 (기본 4개, 크기에 따라 보정)
             spawnStones(4);
             
+            // 슬롯 초기 상태 잠금 해제
+            playerFrozenSlots = [false, false, false];
+            aiFrozenSlots = [false, false, false];
+            frozenTimers = [0, 0, 0];
+            
             // 슬롯에 블록 채우기
             fillAllSlots();
             
@@ -487,6 +590,8 @@
             if (settings.gameMode === 'pvp') {
                 opponentPanel.classList.remove('hidden');
                 timerTextEl.classList.remove('hidden');
+                manaPanel.classList.remove('hidden');
+                skillsPanel.classList.remove('hidden');
                 modeTextEl.innerText = "Time Remaining";
                 
                 aiScore = 0;
@@ -494,6 +599,10 @@
                 aiCombo = 0;
                 aiScoreValEl.innerText = "0";
                 aiHpBarEl.style.width = "100%";
+                
+                mana = 0;
+                aiMana = 0;
+                updateManaUI();
                 
                 // AI 보드 초기화
                 aiBoard = Array(GRID_SIZE).fill(null).map(() => 
@@ -520,6 +629,8 @@
             } else {
                 opponentPanel.classList.add('hidden');
                 timerTextEl.classList.add('hidden');
+                manaPanel.classList.add('hidden');
+                skillsPanel.classList.add('hidden');
                 modeTextEl.innerText = "Singleplay Mode";
                 
                 // 타이머 & AI 해제
@@ -536,6 +647,22 @@
             // 모달 닫기
             modalGameOver.classList.add('hidden');
             modalSettings.classList.add('hidden');
+        }
+
+        // 테마 동적 바인딩 함수
+        function applyTheme() {
+            const mainBgMap = {
+                neon: 'bg-background text-on-background',
+                wood: 'bg-[#231a11] text-[#f5f5dc]',
+                candy: 'bg-[#1a1c23] text-[#f8f8f2]'
+            };
+            
+            document.body.className = `font-body-sm overflow-hidden h-[100dvh] w-screen flex flex-col select-none dragging-active ${mainBgMap[settings.theme] || mainBgMap.neon}`;
+            
+            const boardContainer = document.getElementById('game-board-container');
+            if (boardContainer) {
+                boardContainer.className = `relative w-full aspect-square overflow-hidden select-none ${THEME_COLORS[settings.theme].boardBg}`;
+            }
         }
 
         function spawnStones(count) {
@@ -789,11 +916,19 @@
             
             aiSlots[targetSlotIndex] = null;
             aiScore += targetBlock.cells.length * 5;
+            chargeManaAI(5);
             
             processAiLinesAndScores();
             
             if (aiSlots.every(s => s === null)) {
                 fillAllSlotsAI();
+            }
+            
+            // AI의 액티브 스킬 자동 발동 판단 (마나가 차면 50% 확률로 시전)
+            if (aiMana >= 60 && Math.random() < 0.5) {
+                castFreeze(false);
+            } else if (aiMana >= 50 && Math.random() < 0.5) {
+                castMeteor(false);
             }
             
             renderAiBoard();
@@ -864,6 +999,8 @@
                 const basePoints = totalLines * 100;
                 const comboBonus = (aiCombo - 1) * 50;
                 aiScore += (basePoints + comboBonus);
+                
+                chargeManaAI(totalLines * 15);
                 
                 // AI 콤보 시 플레이어 쪽에 파티클 공격 투하
                 if (aiCombo >= 1) {
@@ -994,6 +1131,8 @@
         // --- 4. RENDER PROCEDURES ---
         function renderBoard() {
             boardGridEl.innerHTML = '';
+            const themeColors = THEME_COLORS[settings.theme] || THEME_COLORS.neon;
+
             for (let r = 0; r < GRID_SIZE; r++) {
                 for (let c = 0; c < GRID_SIZE; c++) {
                     const cell = board[r][c];
@@ -1001,32 +1140,23 @@
                     cellEl.dataset.row = r;
                     cellEl.dataset.col = c;
                     
-                    // 기본 스타일
                     cellEl.className = 'w-full h-full rounded-sm transition-all duration-200 relative ';
                     
                     if (cell.type === 'empty') {
-                        cellEl.className += 'bg-black/35 shadow-[inset_0_2px_4px_rgba(0,0,0,0.6)] border border-white/[0.02]';
+                        cellEl.className += themeColors.empty;
                     } else if (cell.type === 'block') {
-                        // Tailwind 컬러 클래스 매핑 (3D 입체 및 두께감 부여)
-                        const colorMap = {
-                            primary: 'bg-primary border-b-[3px] border-r-[3px] border-black/40 shadow-[0_0_12px_rgba(173,198,255,0.5),inset_0_2px_3px_rgba(255,255,255,0.4)]',
-                            secondary: 'bg-secondary border-b-[3px] border-r-[3px] border-black/40 shadow-[0_0_12px_rgba(255,176,205,0.5),inset_0_2px_3px_rgba(255,255,255,0.4)]',
-                            tertiary: 'bg-tertiary border-b-[3px] border-r-[3px] border-black/40 shadow-[0_0_12px_rgba(78,222,163,0.5),inset_0_2px_3px_rgba(255,255,255,0.4)]'
-                        };
-                        cellEl.className += colorMap[cell.color] || 'bg-outline';
+                        cellEl.className += themeColors[cell.color] || 'bg-outline';
                         
-                        // 색약 패턴 적용
                         if (settings.colorblind && cell.patternClass) {
                             cellEl.classList.add(cell.patternClass);
                         }
                     } else if (cell.type === 'stone') {
                         cellEl.classList.add('stone-texture', 'border', 'border-outline-variant/60', 'border-b-[3px]', 'border-r-[3px]', 'border-black/50', 'shadow-[inset_0_1px_2px_rgba(255,255,255,0.1)]');
                         
-                        // 돌 위에 깨진 균열을 표시하기 위해 내구도 대비 아이콘 표시
                         const hpRatio = cell.health / cell.maxHealth;
                         let icon = 'broken_image';
                         if (hpRatio > 0.5) {
-                            icon = 'texture'; // 덜 깨진 상태
+                            icon = 'texture';
                         }
                         
                         const innerHTML = `
@@ -1044,19 +1174,34 @@
         }
 
         function renderSlots() {
+            const themeColors = THEME_COLORS[settings.theme] || THEME_COLORS.neon;
+
             for (let i = 0; i < 3; i++) {
                 const slotEl = document.querySelector(`.slot-container[data-slot="${i}"]`);
                 slotEl.innerHTML = '';
                 
+                // 만약 현재 슬롯이 빙결 스킬에 의해 얼어붙은 상태라면
+                if (playerFrozenSlots[i]) {
+                    slotEl.classList.add('ice-freeze');
+                    
+                    // 얼음 카운터 텍스트 드로잉
+                    const timerEl = document.createElement('div');
+                    timerEl.className = 'absolute inset-0 flex flex-col items-center justify-center z-10 text-white font-black drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]';
+                    timerEl.innerHTML = `
+                        <span class="material-symbols-outlined text-lg animate-spin">ac_unit</span>
+                        <span class="text-[9px] font-label-mono mt-[2px]">${frozenTimers[i]}s</span>
+                    `;
+                    slotEl.appendChild(timerEl);
+                } else {
+                    slotEl.classList.remove('ice-freeze');
+                }
+
                 const block = slots[i];
                 if (!block) {
-                    // 비어있는 슬롯
-                    slotEl.innerHTML = '<span class="material-symbols-outlined text-white/10 text-2xl select-none">block</span>';
+                    slotEl.innerHTML += '<span class="material-symbols-outlined text-white/10 text-2xl select-none">block</span>';
                     continue;
                 }
 
-                // 블록 모양 미니 그리드로 시각화
-                // 슬롯 내부의 크기를 알기 위해 최대 바운딩 박스를 계산
                 let minR = 99, maxR = -99, minC = 99, maxC = -99;
                 block.cells.forEach(([r, c]) => {
                     if (r < minR) minR = r;
@@ -1073,10 +1218,8 @@
                 gridContainer.style.gridTemplateRows = `repeat(${rows}, minmax(0, 1fr))`;
                 gridContainer.style.gridTemplateColumns = `repeat(${cols}, minmax(0, 1fr))`;
                 
-                // 임시 셀 위치 사전 구축
                 const cellSet = new Set(block.cells.map(([r, c]) => `${r - minR},${c - minC}`));
                 
-                // 미니 블록 그리기
                 for (let r = 0; r < rows; r++) {
                     for (let c = 0; c < cols; c++) {
                         const cellEl = document.createElement('div');
@@ -1084,14 +1227,8 @@
                         cellEl.className = `${cellSize} rounded-sm transition-all`;
                         
                         if (cellSet.has(`${r},${c}`)) {
-                            const colorMap = {
-                                primary: 'bg-primary shadow-sm',
-                                secondary: 'bg-secondary shadow-sm',
-                                tertiary: 'bg-tertiary shadow-sm'
-                            };
-                            cellEl.className += ' ' + colorMap[block.color];
+                            cellEl.className += ' ' + (themeColors[block.color] || 'bg-outline');
                             
-                            // 색약 패턴
                             if (settings.colorblind && block.patternClass) {
                                 cellEl.classList.add(block.patternClass);
                             }
@@ -1108,23 +1245,32 @@
 
         function fillAllSlots() {
             for (let i = 0; i < 3; i++) {
-                if (slots[i] === null) {
-                    slots[i] = getRandomBlockBasedOnScore();
+                if (slots[i] === null && !playerFrozenSlots[i]) {
+                    slots[i] = getRandomBlockBasedOnScore(score);
                 }
             }
         }
 
-        // 점수대에 따른 동적 가중치 난이도 조절 함수 (DDA)
-        function getRandomBlockBasedOnScore() {
-            let weights = { easy: 0.70, normal: 0.25, hard: 0.05 }; // 0~499점 (쉬움 중심)
-
-            if (score >= 500 && score < 1500) {
-                weights = { easy: 0.35, normal: 0.45, hard: 0.20 }; // 500~1499점 (중간)
-            } else if (score >= 1500) {
-                weights = { easy: 0.15, normal: 0.35, hard: 0.50 }; // 1500점 이상 (어려움 중심)
+        // 덱 팩 옵션 및 스코어 DDA 연동 가중치 스폰 알고리즘
+        function getRandomBlockBasedOnScore(currentScore = score) {
+            let weights = { easy: 0.70, normal: 0.25, hard: 0.05 };
+            
+            // 덱 빌딩 프리셋 팩 적용
+            if (settings.blockPack === 'combo') {
+                // 콤보 팩: 소형 블록 스폰 가중치 극대화 (80%)
+                weights = { easy: 0.80, normal: 0.15, hard: 0.05 };
+            } else if (settings.blockPack === 'tactical') {
+                // 하드 팩: 대형 및 난해한 블록 가중치 극대화 (70%)
+                weights = { easy: 0.15, normal: 0.15, hard: 0.70 };
+            } else {
+                // 밸런스 팩 (표준 DDA 가중치 분기)
+                if (currentScore >= 500 && currentScore < 1500) {
+                    weights = { easy: 0.35, normal: 0.45, hard: 0.20 };
+                } else if (currentScore >= 1500) {
+                    weights = { easy: 0.15, normal: 0.35, hard: 0.50 };
+                }
             }
 
-            // 난이도별 템플릿 그룹화
             const categorized = {
                 easy: BLOCK_TEMPLATES.filter(b => b.difficulty === 'easy'),
                 normal: BLOCK_TEMPLATES.filter(b => b.difficulty === 'normal'),
@@ -1142,7 +1288,6 @@
                 selectedDiff = 'hard';
             }
 
-            // 안전장치 폴백 처리
             const pool = categorized[selectedDiff].length > 0 ? categorized[selectedDiff] : BLOCK_TEMPLATES;
             const rndIdx = Math.floor(Math.random() * pool.length);
             
@@ -1193,7 +1338,13 @@
             const index = parseInt(container.dataset.slot);
             if (slots[index] === null) return;
             
-            // 빙결 쿨타임 등의 경우 체크 (Phase 1 에서는 모두 가능)
+            // 만약 현재 슬롯이 빙결 스킬에 걸려 있다면 터치 거부 및 흔들림(Shake)
+            if (playerFrozenSlots[index]) {
+                container.classList.add('animate-shake');
+                setTimeout(() => container.classList.remove('animate-shake'), 300);
+                if ('vibrate' in navigator) navigator.vibrate(80);
+                return;
+            }
             
             e.preventDefault(); // 기본 터치 홀드 줌/스크롤 제어 방지
             
@@ -1469,6 +1620,11 @@
             score += block.cells.length * 5;
             updateScoreUI();
             
+            // 마나 충전 (PvP인 경우)
+            if (settings.gameMode === 'pvp') {
+                chargeMana(5);
+            }
+            
             // 1v1 PvP 대전 시 배치할 때마다 타이머를 15초로 즉각 갱신
             resetTimer();
         }
@@ -1503,9 +1659,17 @@
             
             if (totalLines > 0) {
                 combo++;
-                // 점수 계산: (줄 수 * 100) * 콤보 가중치
-                const points = (totalLines * 100) * combo;
+                // 점수 계산: (줄 수 * 100) * 콤보 가중치 (Tactical 팩 2배 보너스 추가)
+                let points = (totalLines * 100) * combo;
+                if (settings.blockPack === 'tactical') {
+                    points *= 2;
+                }
                 score += points;
+                
+                // 마나 충전
+                if (settings.gameMode === 'pvp') {
+                    chargeMana(totalLines * 15);
+                }
                 
                 // 콤보 플로팅 UI 띄우기
                 triggerComboFloatingEffect(combo);
@@ -1567,6 +1731,190 @@
                 comboDisplayEl.classList.remove('invisible');
             } else {
                 comboDisplayEl.classList.add('invisible');
+            }
+        }
+
+        // --- 4-2. PvP ACTIVE SKILLS SYSTEM ---
+        function chargeMana(amount) {
+            mana = Math.min(100, mana + amount);
+            updateManaUI();
+        }
+
+        function chargeManaAI(amount) {
+            aiMana = Math.min(100, aiMana + amount);
+        }
+
+        function updateManaUI() {
+            if (manaBarEl) {
+                manaBarEl.style.width = `${mana}%`;
+            }
+            if (manaTextEl) {
+                manaTextEl.innerText = `${mana} / 100`;
+            }
+
+            // 메테오 버튼 활성화 상태 갱신 (마나 50 소모)
+            if (mana >= 50) {
+                btnSkillMeteor.classList.remove('cursor-not-allowed', 'text-orange-400/40', 'border-orange-500/20');
+                btnSkillMeteor.className = 'w-[48%] py-1.5 glass-panel rounded-xl flex items-center justify-center gap-1.5 border border-orange-500 text-orange-400 font-black text-[9px] cursor-pointer transition-all active:scale-95 shadow-[0_0_10px_rgba(251,146,60,0.3)] animate-pulse';
+            } else {
+                btnSkillMeteor.className = 'w-[48%] py-1.5 glass-panel rounded-xl flex items-center justify-center gap-1.5 border border-orange-500/20 text-orange-400/40 font-bold text-[9px] cursor-not-allowed transition-all active:scale-95';
+            }
+
+            // 빙결 버튼 활성화 상태 갱신 (마나 60 소모)
+            if (mana >= 60) {
+                btnSkillFreeze.classList.remove('cursor-not-allowed', 'text-blue-400/40', 'border-blue-500/20');
+                btnSkillFreeze.className = 'w-[48%] py-1.5 glass-panel rounded-xl flex items-center justify-center gap-1.5 border border-blue-500 text-blue-400 font-black text-[9px] cursor-pointer transition-all active:scale-95 shadow-[0_0_10px_rgba(96,165,250,0.3)] animate-pulse';
+            } else {
+                btnSkillFreeze.className = 'w-[48%] py-1.5 glass-panel rounded-xl flex items-center justify-center gap-1.5 border border-blue-500/20 text-blue-400/40 font-bold text-[9px] cursor-not-allowed transition-all active:scale-95';
+            }
+        }
+
+        // 스킬 이벤트 바인딩
+        document.getElementById('btn-skill-meteor').addEventListener('click', () => {
+            if (mana >= 50) {
+                castMeteor(true);
+            }
+        });
+
+        document.getElementById('btn-skill-freeze').addEventListener('click', () => {
+            if (mana >= 60) {
+                castFreeze(true);
+            }
+        });
+
+        // 메테오 스킬 비주얼 연출 및 상태 적용
+        function castMeteor(fromPlayer) {
+            if (fromPlayer) {
+                mana -= 50;
+                updateManaUI();
+            } else {
+                aiMana -= 50;
+            }
+
+            createMeteorParticles(fromPlayer);
+
+            const targetBoard = fromPlayer ? aiBoard : board;
+            const size = GRID_SIZE;
+            let emptyCells = [];
+            
+            for (let r = 0; r < size; r++) {
+                for (let c = 0; c < size; c++) {
+                    if (targetBoard[r][c].type === 'empty') {
+                        emptyCells.push({ r, c });
+                    }
+                }
+            }
+
+            // 빈 곳 중 무작위 2곳에 돌 배치 (체력 2짜리)
+            for (let i = 0; i < 2; i++) {
+                if (emptyCells.length > 0) {
+                    const idx = Math.floor(Math.random() * emptyCells.length);
+                    const target = emptyCells.splice(idx, 1)[0];
+                    
+                    targetBoard[target.r][target.c] = {
+                        type: 'stone',
+                        color: null,
+                        health: settings.stoneHP,
+                        maxHealth: settings.stoneHP,
+                        patternClass: null
+                    };
+                }
+            }
+
+            if (fromPlayer) {
+                renderAiBoard();
+                aiHP = Math.max(0, aiHP - 10);
+                if (aiHpBarEl) aiHpBarEl.style.width = `${aiHP}%`;
+                if (aiHP <= 0) triggerGameOver(true, "상대방의 체력을 전멸시켜 승리했습니다!");
+            } else {
+                renderBoard();
+                const boardContainer = document.getElementById('game-board-container');
+                if (boardContainer) {
+                    boardContainer.classList.add('animate-shake');
+                    setTimeout(() => boardContainer.classList.remove('animate-shake'), 350);
+                }
+                if ('vibrate' in navigator) navigator.vibrate(200);
+            }
+        }
+
+        // 메테오 전용 화염 낙하 파티클 이펙트
+        function createMeteorParticles(fromPlayer) {
+            const colors = ['#f97316', '#ef4444', '#eab308'];
+            const targetEl = fromPlayer ? opponentPanel : boardGridEl;
+            const rect = targetEl.getBoundingClientRect();
+            
+            for (let i = 0; i < 15; i++) {
+                const p = document.createElement('div');
+                const size = Math.random() * 12 + 6;
+                const startX = rect.left + Math.random() * rect.width;
+                const startY = rect.top - 120 - Math.random() * 100;
+                
+                p.className = 'fixed pointer-events-none z-[99] rounded-full opacity-90 animate-bounce';
+                p.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                p.style.width = `${size}px`;
+                p.style.height = `${size}px`;
+                p.style.left = `${startX}px`;
+                p.style.top = `${startY}px`;
+                p.style.boxShadow = `0 0 15px ${p.style.backgroundColor}`;
+                p.style.transition = 'all 0.5s cubic-bezier(0.19, 1, 0.22, 1)';
+                
+                document.body.appendChild(p);
+                
+                setTimeout(() => {
+                    p.style.top = `${rect.top + Math.random() * rect.height}px`;
+                    p.style.left = `${rect.left + Math.random() * rect.width}px`;
+                    p.style.transform = 'scale(0.3)';
+                    p.style.opacity = '0';
+                }, 30);
+                
+                setTimeout(() => p.remove(), 600);
+            }
+        }
+
+        // 빙결 스킬 비주얼 연출 및 잠금 적용
+        function castFreeze(fromPlayer) {
+            if (fromPlayer) {
+                mana -= 60;
+                updateManaUI();
+            } else {
+                aiMana -= 60;
+            }
+
+            const targetSlots = fromPlayer ? aiSlots : slots;
+            const targetFrozen = fromPlayer ? aiFrozenSlots : playerFrozenSlots;
+            
+            let validIndices = [];
+            for (let i = 0; i < 3; i++) {
+                if (targetSlots[i] !== null && !targetFrozen[i]) {
+                    validIndices.push(i);
+                }
+            }
+
+            if (validIndices.length === 0) {
+                validIndices = [0, 1, 2];
+            }
+
+            const selectedIdx = validIndices[Math.floor(Math.random() * validIndices.length)];
+            
+            if (fromPlayer) {
+                aiFrozenSlots[selectedIdx] = true;
+                setTimeout(() => {
+                    aiFrozenSlots[selectedIdx] = false;
+                }, 6000);
+            } else {
+                playerFrozenSlots[selectedIdx] = true;
+                frozenTimers[selectedIdx] = 6;
+                renderSlots();
+                
+                const interval = setInterval(() => {
+                    frozenTimers[selectedIdx]--;
+                    if (frozenTimers[selectedIdx] <= 0) {
+                        clearInterval(interval);
+                        playerFrozenSlots[selectedIdx] = false;
+                        if ('vibrate' in navigator) navigator.vibrate([40, 30, 40]);
+                    }
+                    renderSlots();
+                }, 1000);
             }
         }
 
@@ -1702,6 +2050,8 @@
                 selectStoneHP.value = settings.stoneHP;
                 selectGridSize.value = settings.gridSize;
                 selectGameMode.value = settings.gameMode;
+                selectBlockPack.value = settings.blockPack;
+                selectTheme.value = settings.theme;
                 
                 modalSettings.classList.remove('hidden');
             });
@@ -1715,6 +2065,8 @@
                 settings.stoneHP = parseInt(selectStoneHP.value);
                 settings.gridSize = parseInt(selectGridSize.value);
                 settings.gameMode = selectGameMode.value;
+                settings.blockPack = selectBlockPack.value;
+                settings.theme = selectTheme.value;
                 initGame();
             });
             
