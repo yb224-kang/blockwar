@@ -1446,6 +1446,11 @@
             
             if (targetCell) {
                 drawPreviewHighlight(targetCell.row, targetCell.col, block);
+                // 안착 가능 자석 스냅 맺히면 손가락 밑 드래그 헬퍼는 숨겨 겹침 방지
+                dragHelperEl.classList.add('opacity-0');
+            } else {
+                // 스냅 범위 밖에서는 헬퍼 투명화 원복
+                dragHelperEl.classList.remove('opacity-0');
             }
         }
 
@@ -1465,8 +1470,9 @@
                 placed = true;
             }
             
-            // 초기화
+            // 초기화 (투명화 해제 후 숨김)
             dragHelperEl.classList.add('hidden');
+            dragHelperEl.classList.remove('opacity-0');
             const slotContainer = document.querySelector(`.slot-container[data-slot="${activeDragIndex}"]`);
             if (slotContainer) slotContainer.classList.remove('opacity-30');
             
