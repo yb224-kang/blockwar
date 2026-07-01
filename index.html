@@ -106,6 +106,18 @@
             pointer-events: none !important;
             filter: brightness(1.2);
         }
+
+        /* 라인 격파 예견 하이라이트 (붉은색 점멸 대시라인) */
+        .line-clear-preview {
+            background-color: rgba(239, 68, 68, 0.25) !important;
+            border: 1.5px dashed rgba(239, 68, 68, 0.6) !important;
+            box-shadow: inset 0 0 12px rgba(239, 68, 68, 0.5) !important;
+            animation: pulse-red 0.8s infinite alternate !important;
+        }
+        @keyframes pulse-red {
+            0% { opacity: 0.65; }
+            100% { opacity: 1; }
+        }
     </style>
     <script id="tailwind-config">
         tailwind.config = {
@@ -1323,6 +1335,8 @@
         let cachedCellElements = []; // 보드 셀 DOM 엘리먼트 캐시 (무거운 querySelector 제거용)
         let lastPreviewedCells = []; // 이전 프레임에서 프리뷰 하이라이트된 셀 좌표 기억 장치
         let lastTargetCellKey = ""; // 이전 자석 스냅 셀 듀플리케이션 방지 키
+        let lastMoveTime = 0; // 드래그 속도 계산용 시간 기록
+        let lastMovePos = { x: 0, y: 0 }; // 드래그 속도 계산용 좌표 기록
         
         function setupDragEvents() {
             const slotContainers = document.querySelectorAll('.slot-container');
@@ -1390,6 +1404,8 @@
             // 보드 각 셀의 위치 캐싱
             cacheCellCenters();
             lastTargetCellKey = "";
+            lastMoveTime = 0;
+            lastMovePos = { x: eventClientX, y: eventClientY };
             
             // 드래그 헬퍼 준비
             renderDragHelper(slots[index], eventClientX, eventClientY);
@@ -1464,9 +1480,29 @@
             
             updateDragHelperPos(clientX, clientY);
             
-            // 자석 효과(Snap-to-Grid)를 적용한 대상 셀 계산
+            // 순간 속도 계산 (빠른 드래그 스와이프 시에는 자석 스냅 감춤)
+            const now = performance.now();
+            let isFast = false;
+            if (lastMoveTime > 0) {
+                const dt = now - lastMoveTime;
+                if (dt > 0) {
+                    const dx = clientX - lastMovePos.x;
+                    const dy = clientY - lastMovePos.y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+                    const speed = dist / dt; // px/ms
+                    
+                    if (speed > 1.4) {
+                        isFast = true;
+                    }
+                }
+            }
+            lastMoveTime = now;
+            lastMovePos.x = clientX;
+            lastMovePos.y = clientY;
+            
+            // 빠를 때는 자석 스냅을 무시하여 드래그 헬퍼 깜빡임 및 버벅임 완전 방지
             const block = slots[activeDragIndex];
-            const targetCell = getClosestValidCell(clientX, clientY + dragOffset.y, block);
+            const targetCell = isFast ? null : getClosestValidCell(clientX, clientY + dragOffset.y, block);
             
             const targetKey = targetCell ? `${targetCell.row},${targetCell.col}` : "";
             if (targetKey === lastTargetCellKey) {
@@ -1608,6 +1644,7 @@
             const baseR = block.cells[0][0];
             const baseC = block.cells[0][1];
             
+            // 1. 블록 셀 자체 하이라이트 적용
             block.cells.forEach(([r, c]) => {
                 const targetR = startRow + (r - baseR);
                 const targetC = startCol + (c - baseC);
@@ -1622,6 +1659,68 @@
                         };
                         cellEl.className += ' ' + colors[block.color];
                         lastPreviewedCells.push({ r: targetR, c: targetC });
+                    }
+                }
+            });
+
+            // 2. 가상 가득 찬 라인 감지 시뮬레이션
+            let tempBoard = Array(GRID_SIZE).fill(null).map((_, r) => 
+                Array(GRID_SIZE).fill(null).map((_, c) => board[r][c].type)
+            );
+            
+            block.cells.forEach(([r, c]) => {
+                const targetR = startRow + (r - baseR);
+                const targetC = startCol + (c - baseC);
+                if (targetR >= 0 && targetR < GRID_SIZE && targetC >= 0 && targetC < GRID_SIZE) {
+                    tempBoard[targetR][targetC] = 'block';
+                }
+            });
+
+            let rowsToClear = [];
+            let colsToClear = [];
+            
+            for (let r = 0; r < GRID_SIZE; r++) {
+                if (tempBoard[r].every(type => type !== 'empty')) {
+                    rowsToClear.push(r);
+                }
+            }
+            
+            for (let c = 0; c < GRID_SIZE; c++) {
+                let isFull = true;
+                for (let r = 0; r < GRID_SIZE; r++) {
+                    if (tempBoard[r][c] === 'empty') {
+                        isFull = false;
+                        break;
+                    }
+                }
+                if (isFull) {
+                    colsToClear.push(c);
+                }
+            }
+
+            // 3. 지워질 가로/세로 전체 줄 하이라이트 부여
+            const previewSet = new Set(block.cells.map(([r, c]) => `${startRow + (r - baseR)},${startCol + (c - baseC)}`));
+
+            rowsToClear.forEach(r => {
+                for (let c = 0; c < GRID_SIZE; c++) {
+                    if (!previewSet.has(`${r},${c}`)) {
+                        const cellEl = cachedCellElements[r]?.[c];
+                        if (cellEl) {
+                            cellEl.className += ' line-clear-preview';
+                            lastPreviewedCells.push({ r: r, c: c });
+                        }
+                    }
+                }
+            });
+
+            colsToClear.forEach(c => {
+                for (let r = 0; r < GRID_SIZE; r++) {
+                    if (!previewSet.has(`${r},${c}`)) {
+                        const cellEl = cachedCellElements[r]?.[c];
+                        if (cellEl) {
+                            cellEl.className += ' line-clear-preview';
+                            lastPreviewedCells.push({ r: r, c: c });
+                        }
                     }
                 }
             });
