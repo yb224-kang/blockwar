@@ -1454,7 +1454,15 @@
             const clientX = e.touches ? e.touches[0].clientX : e.clientX;
             const clientY = e.touches ? e.touches[0].clientY : e.clientY;
             
-            updateDragHelperPos(clientX, clientY);
+            // 드래그 감도 1.35배 증폭 처리 (손가락 대비 이동 범위 확장)
+            const sensitivity = 1.35;
+            const dx = clientX - touchStartPos.x;
+            const dy = clientY - touchStartPos.y;
+            
+            const targetX = touchStartPos.x + dx * sensitivity;
+            const targetY = touchStartPos.y + dy * sensitivity;
+            
+            updateDragHelperPos(targetX, targetY);
             
             // 순간 속도 계산 (빠른 드래그 스와이프 시에는 자석 스냅 감춤)
             const now = performance.now();
@@ -1462,9 +1470,9 @@
             if (lastMoveTime > 0) {
                 const dt = now - lastMoveTime;
                 if (dt > 0) {
-                    const dx = clientX - lastMovePos.x;
-                    const dy = clientY - lastMovePos.y;
-                    const dist = Math.sqrt(dx * dx + dy * dy);
+                    const moveDx = clientX - lastMovePos.x;
+                    const moveDy = clientY - lastMovePos.y;
+                    const dist = Math.sqrt(moveDx * moveDx + moveDy * moveDy);
                     const speed = dist / dt; // px/ms
                     
                     if (speed > 1.6) {
@@ -1476,9 +1484,9 @@
             lastMovePos.x = clientX;
             lastMovePos.y = clientY;
             
-            // 빠를 때는 자석 스냅을 무시하여 드래그 헬퍼 깜빡임 및 버벅임 완전 방지
+            // 빠를 때는 자석 스냅을 무시하여 드래그 헬퍼 깜빡임 및 버벅임 완전 방지 (보정된 targetX, targetY 기준 스냅)
             const block = slots[activeDragIndex];
-            const targetCell = isFast ? null : getClosestCell(clientX, clientY + dragOffset.y);
+            const targetCell = isFast ? null : getClosestCell(targetX, targetY + dragOffset.y);
             
             const targetKey = targetCell ? `${targetCell.row},${targetCell.col}` : "";
             if (targetKey === lastTargetCellKey) {
@@ -1512,8 +1520,16 @@
             const clientX = e.changedTouches ? e.changedTouches[0].clientX : e.clientX;
             const clientY = e.changedTouches ? e.changedTouches[0].clientY : e.clientY;
             
+            // 드래그 감도 1.35배 동일 증폭 처리
+            const sensitivity = 1.35;
+            const dx = clientX - touchStartPos.x;
+            const dy = clientY - touchStartPos.y;
+            
+            const targetX = touchStartPos.x + dx * sensitivity;
+            const targetY = touchStartPos.y + dy * sensitivity;
+            
             const block = slots[activeDragIndex];
-            const targetCell = getClosestCell(clientX, clientY + dragOffset.y);
+            const targetCell = getClosestCell(targetX, targetY + dragOffset.y);
             
             let placed = false;
             
