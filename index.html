@@ -170,7 +170,7 @@
     </script>
 </head>
 
-<body class="bg-background text-on-background font-body-sm overflow-hidden h-screen w-screen flex flex-col select-none dragging-active">
+<body class="bg-background text-on-background font-body-sm overflow-hidden h-[100dvh] w-screen flex flex-col select-none dragging-active">
     
     <!-- Top Navigation Shell -->
     <header class="fixed top-0 w-full z-50 flex justify-between items-center px-md h-16 bg-surface/80 backdrop-blur-xl border-b border-outline-variant/30">
@@ -188,10 +188,10 @@
     </header>
 
     <!-- Main Game Area -->
-    <main class="flex-grow pt-14 pb-16 relative flex flex-col items-center justify-center gap-y-2 select-none overflow-hidden">
+    <main class="flex-grow pt-16 pb-16 relative flex flex-col items-center justify-center gap-y-1.5 select-none overflow-hidden">
         
-        <!-- TOP AREA: 상대방 미니 보드 (간결화하여 세로 공간 절약 및 찌그러짐 방지) -->
-        <section class="w-full flex flex-col items-center justify-center flex-shrink-0 mt-1">
+        <!-- TOP AREA: 상대방 미니 보드 (싱글플레이 시에는 숨김(hidden) 처리하여 세로 공간 대폭 절약) -->
+        <section class="w-full hidden flex-col items-center justify-center flex-shrink-0 mt-1">
             <div class="relative w-24 aspect-square border border-outline-variant/30 rounded-lg overflow-hidden bg-surface-dim opacity-40">
                 <div class="absolute inset-0 grid-line" style="background-size: 10% 10%;"></div>
                 <div class="absolute inset-1 grid grid-cols-10 grid-rows-10 gap-[1px]">
@@ -207,16 +207,16 @@
             </div>
         </section>
 
-        <!-- MIDDLE AREA (타임 프로그레스바): 너비를 보드판과 동기화 (320px) -->
-        <div class="w-full max-w-[320px] flex flex-col gap-[3px] mx-auto px-1 flex-shrink-0">
+        <!-- MIDDLE AREA (타임 프로그레스바): 너비를 보드판과 동기화 (300px) -->
+        <div class="w-full max-w-[300px] flex flex-col gap-[3px] mx-auto px-1 flex-shrink-0">
             <div class="flex justify-between items-end px-1"><span class="font-label-mono text-[9px] text-on-surface-variant uppercase tracking-widest">Singleplay Mode</span><span id="combo-display" class="font-label-mono text-label-mono text-secondary font-bold invisible">COMBO x0</span></div>
             <div class="h-2 w-full bg-surface-container-highest/20 rounded-full overflow-hidden border border-outline-variant/20 relative">
                 <div class="h-full bg-gradient-to-r from-primary to-secondary w-full transition-all duration-300"></div>
             </div>
         </div>
 
-        <!-- MAIN BOARD AREA: 너비를 320px로 제한하여 세로 비율 및 여백 보존 -->
-        <section class="relative w-full max-w-[320px] flex items-center justify-center mx-auto my-1 flex-shrink-0">
+        <!-- MAIN BOARD AREA: 너비를 300px로 최적화하여 뷰포트 맞춤 -->
+        <section class="relative w-full max-w-[300px] flex items-center justify-center mx-auto my-1 flex-shrink-0">
             <div id="game-board-container" class="relative w-full aspect-square glass-panel rounded-xl p-unit shadow-2xl overflow-hidden select-none">
                 <!-- Grid Lines -->
                 <div class="absolute inset-0 grid-line opacity-10"></div>
@@ -236,8 +236,8 @@
             </div>
         </section>
 
-        <!-- BOTTOM AREA: 보드판과 일치하는 320px 너비 및 간격 확보 -->
-        <section class="w-full max-w-[320px] flex items-center justify-center mx-auto mt-2 pb-2 flex-shrink-0">
+        <!-- BOTTOM AREA: 보드판과 일치하는 300px 너비 및 간격 확보 -->
+        <section class="w-full max-w-[300px] flex items-center justify-center mx-auto mt-4 pb-2 flex-shrink-0">
             <div class="w-full glass-panel rounded-2xl flex items-center justify-around p-3 relative shadow-lg">
                 <!-- Slot 1 -->
                 <div data-slot="0" class="slot-container w-[28%] aspect-square flex items-center justify-center rounded-xl cursor-pointer transition-all active:scale-95 hover:bg-white/5 relative">
@@ -253,6 +253,10 @@
                 <div class="h-8 w-[1px] bg-outline-variant/30"></div>
                 <!-- Slot 3 -->
                 <div data-slot="2" class="slot-container w-[28%] aspect-square flex items-center justify-center rounded-xl cursor-pointer transition-all active:scale-95 hover:bg-white/5 relative">
+                    <!-- Rendered dynamically -->
+                </div>
+            </div>
+        </section>-xl cursor-pointer transition-all active:scale-95 hover:bg-white/5 relative">
                     <!-- Rendered dynamically -->
                 </div>
             </div>
