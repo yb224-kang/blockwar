@@ -1529,8 +1529,8 @@
             const clientX = e.touches ? e.touches[0].clientX : e.clientX;
             const clientY = e.touches ? e.touches[0].clientY : e.clientY;
             
-            // 드래그 감도 1.55배 증폭 처리 (손가락 대비 이동 범위 확장)
-            const sensitivity = 1.55;
+            // 드래그 감도 3.0배 증폭 처리 (손가락 대비 이동 범위 대폭 확장)
+            const sensitivity = 3.0;
             const dx = clientX - touchStartPos.x;
             const dy = clientY - touchStartPos.y;
             
@@ -1603,8 +1603,8 @@
             const clientX = e.changedTouches ? e.changedTouches[0].clientX : e.clientX;
             const clientY = e.changedTouches ? e.changedTouches[0].clientY : e.clientY;
             
-            // 드래그 감도 1.55배 동일 증폭 처리
-            const sensitivity = 1.55;
+            // 드래그 감도 3.0배 동일 증폭 처리
+            const sensitivity = 3.0;
             const dx = clientX - touchStartPos.x;
             const dy = clientY - touchStartPos.y;
             
@@ -1721,21 +1721,16 @@
             return true;
         }
 
-        // 유효 여부에 무관하게 가장 가까운 물리적 격자 탐색 (단, 경계 밖으로 삐져나가지 않는 온전한 격자만 매핑)
+        // 유효 여부에 무관하게 가장 가까운 물리적 격자 탐색 (드래그 감도 증폭에 대응해 스냅 반경을 240px로 2배 대폭 확대)
         function getClosestCell(x, y, block) {
             if (cellCenters.length === 0) return null;
             
-            const maxSnapDistanceSquare = 120 * 120; // 14400
+            const maxSnapDistanceSquare = 240 * 240; // 57600
             let minSquareDist = Infinity;
             let closest = null;
             
             for (let i = 0; i < cellCenters.length; i++) {
                 const cell = cellCenters[i];
-                
-                // 블록 형태가 경계 바깥으로 짤려 변형되는 노드는 스냅 배제
-                if (!isValidBoundary(cell.row, cell.col, block)) {
-                    continue;
-                }
                 
                 const dx = cell.x - x;
                 const dy = cell.y - y;
