@@ -233,7 +233,7 @@
         
         <!-- TOP AREA: 상대방 미니 보드 (동적 1v1 PvP 모드 시 노출) -->
         <section id="opponent-panel" class="w-full hidden flex-col items-center justify-center flex-shrink-0 mt-1">
-            <div class="relative w-24 aspect-square border border-outline-variant/30 rounded-lg overflow-hidden bg-surface-dim shadow-inner">
+            <div class="relative w-24 aspect-square border border-outline-variant/30 rounded-lg bg-surface-dim shadow-inner">
                 <!-- AI Grid Cells (JS로 동적 렌더링) -->
                 <div id="ai-board-grid" class="absolute inset-0.5 grid grid-cols-10 grid-rows-10 gap-[1px] p-[1px]">
                     <!-- Rendered by JS -->
@@ -278,11 +278,11 @@
 
         <!-- MAIN BOARD AREA: 너비를 300px로 최적화하여 뷰포트 맞춤 -->
         <section class="relative w-full max-w-[300px] flex items-center justify-center mx-auto my-1 flex-shrink-0">
-            <div id="game-board-container" class="relative w-full aspect-square glass-panel rounded-xl p-unit shadow-[inset_0_4px_15px_rgba(0,0,0,0.85),0_15px_30px_rgba(0,0,0,0.7)] border border-white/10 overflow-hidden select-none">
+            <div id="game-board-container" class="relative w-full aspect-square glass-panel rounded-xl p-unit shadow-[inset_0_4px_15px_rgba(0,0,0,0.85),0_15px_30px_rgba(0,0,0,0.7)] border border-white/10 select-none">
                 <!-- Grid Lines -->
                 <div class="absolute inset-0 grid-line opacity-10"></div>
                 <!-- 10x10 Grid Cells -->
-                <div id="board-grid" class="relative w-full h-full grid grid-cols-10 grid-rows-10 gap-[2px] p-unit">
+                <div id="board-grid" class="relative w-full h-full grid grid-cols-10 grid-rows-10 gap-[2px] p-unit pb-2 pr-2">
                     <!-- Dynamic rendering by JS -->
                 </div>
                 <!-- Floating Combo UI Container -->
